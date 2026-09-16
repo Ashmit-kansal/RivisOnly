@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Light Mode Tokens (High-Contrast Refined Studio Palette) */
+    --color-surface: 241 245 249;            /* #f1f5f9 cool slate-100 canvas: distinct contrast behind white cards */
+    --color-card: 255 255 255;               /* #ffffff crisp pure white card: pops out cleanly from canvas */
+    --color-container-low: 248 250 252;      /* #f8fafc slate-50: clean inset well / input background */
+    --color-container: 234 240 246;          /* #eaf0f6 distinct interactive pill / tab */
+    --color-container-high: 222 230 240;     /* #dee6f0 hover / active state */
+    --color-container-highest: 209 219 233;  /* #d1dbe9 strong container emphasis */
+    --color-border: 203 213 225;             /* #cbd5e1 slate-300: crisp, clearly defined boundaries */
+    --color-text: 15 23 42;                  /* #0f172a slate-900: commanding, high-contrast readable obsidian */
+    --color-muted: 71 85 105;                /* #475569 slate-600: strong legible secondary text */
+    --color-primary: 158 60 38;              /* #9e3c26 terracotta */
+    --color-primary-container: 254 237 234;  /* #feedea warm terracotta tint */
+    --color-primary-fixed: 255 218 210;      /* #ffdad2 */
+    --color-secondary: 0 108 74;             /* #006c4a sage */
+    --color-secondary-container: 209 250 229;/* #d1fae5 */
+    --color-tertiary: 67 56 202;             /* #4338ca indigo-700: high-contrast synthesis accent */
+    --color-tertiary-container: 224 231 255; /* #e0e7ff */
+  }
+
+  .dark {
+    /* Dark Mode Tokens (Obsidian Bronze & Deep Zinc - Preserved) */
+    --color-surface: 12 14 20;               /* #0c0e14 */
+    --color-card: 22 25 34;                  /* #161922 */
+    --color-container-low: 28 32 45;         /* #1c202d */
+    --color-container: 34 38 52;             /* #222634 */
+    --color-container-high: 43 48 66;        /* #2b3042 */
+    --color-container-highest: 54 60 82;     /* #363c52 */
+    --color-border: 38 43 58;                /* #262b3a */
+    --color-text: 243 244 246;               /* #f3f4f6 */
+    --color-muted: 148 163 184;              /* #94a3b8 */
+    --color-primary: 226 111 84;             /* #e26f54 */
+    --color-primary-container: 255 180 163;  /* #ffb4a3 */
+    --color-primary-fixed: 61 6 0;           /* #3d0600 */
+    --color-secondary: 78 222 163;           /* #4edea3 */
+    --color-secondary-container: 0 56 36;    /* #003824 */
+    --color-tertiary: 189 194 255;           /* #bdc2ff */
+    --color-tertiary-container: 47 58 163;   /* #2f3aa3 */
+  }
+}
+
+@theme {
+  --color-surface: rgb(var(--color-surface));
+  --color-card: rgb(var(--color-card));
+  --color-container-low: rgb(var(--color-container-low));
+  --color-container: rgb(var(--color-container));
+  --color-container-high: rgb(var(--color-container-high));
+  --color-container-highest: rgb(var(--color-container-highest));
+  --color-border: rgb(var(--color-border));
+  --color-text: rgb(var(--color-text));
+  --color-muted: rgb(var(--color-muted));
+  --color-primary: rgb(var(--color-primary));
+  --color-primary-container: rgb(var(--color-primary-container));
+  --color-primary-fixed: rgb(var(--color-primary-fixed));
+  --color-secondary: rgb(var(--color-secondary));
+  --color-secondary-container: rgb(var(--color-secondary-container));
+  --color-tertiary: rgb(var(--color-tertiary));
+  --color-tertiary-container: rgb(var(--color-tertiary-container));
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  border-color: rgb(var(--color-border));
+}
+
+body {
+  background-color: rgb(var(--color-surface));
+  color: rgb(var(--color-text));
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes progress-stripes {
+  0% { background-position: 1rem 0; }
+  100% { background-position: 0 0; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Glass Card */
+.glass-card {
+  background: rgba(var(--color-card), 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgb(var(--color-border));
+}
+
+/* Lo-Fi Player Bar */
+.lofi-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: rgba(var(--color-card), 0.92);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgb(var(--color-border));
+  box-shadow: 0 -4px 20px -2px rgba(20, 27, 43, 0.05);
+}
+
+.dark .lofi-bar {
+  box-shadow: 0 -4px 24px -2px rgba(0, 0, 0, 0.5);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(var(--color-border)); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--color-muted)); }
