@@ -4,54 +4,132 @@ import FileTree from '../features/notes/FileTree';
 import NoteEditor from '../features/notes/NoteEditor';
 import FileUploader from '../features/notes/FileUploader';
 import RevisionReminderModal from '../features/notes/RevisionReminderModal';
-import AIKeyPointsModal from '../features/revision/AIKeyPointsModal';
-import AIProficiencyQuizModal from '../features/revision/AIProficiencyQuizModal';
 import CreateRevisionModal from '../features/revision/CreateRevisionModal';
 import Modal from '../components/ui/Modal';
 import { mockSubjects } from '../data/mockNotes';
 import { 
   Plus, Sparkles, Brain, FolderPlus, ArrowRight, 
-  Layers, FileText, Database, BookOpen, Clock 
+  Layers, FileText, Database, BookOpen, Clock,
+  PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 
 export default function NotesVault() {
   const [searchParams] = useSearchParams();
+
+  // Helper to resolve initial file from URL if provided
+  const getInitialStateFromUrl = () => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const qFileId = params.get('fileId');
+      const qSubject = params.get('subject');
+      const qFolder = params.get('folder');
+      const qModal = params.get('modal');
+
+      if (qFolder) {
+        for (const subj of mockSubjects) {
+          const foundF = subj.folders.find(f => f.name.toLowerCase() === qFolder.toLowerCase());
+          if (foundF) {
+            return {
+              subject: subj.name,
+              folder: foundF.name,
+              file: foundF.files.length > 0 ? foundF.files[0] : null,
+              modal: qModal
+            };
+          }
+        }
+      } else if (qFileId) {
+        for (const subj of mockSubjects) {
+          for (const folder of subj.folders) {
+            const f = folder.files.find(file => file.id === qFileId);
+            if (f) {
+              return { subject: subj.name, folder: folder.name, file: f, modal: qModal };
+            }
+          }
+        }
+      } else if (qSubject) {
+        const foundSubj = mockSubjects.find(s => s.name.toLowerCase() === qSubject.toLowerCase());
+        if (foundSubj && foundSubj.folders.length > 0) {
+          return { 
+            subject: foundSubj.name, 
+            folder: foundSubj.folders[0].name, 
+            file: foundSubj.folders[0].files[0] || null,
+            modal: qModal
+          };
+        }
+      }
+      return {
+        subject: mockSubjects[0].name,
+        folder: mockSubjects[0].folders[0].name,
+        file: mockSubjects[0].folders[0].files[0],
+        modal: qModal
+      };
+    }
+    return {
+      subject: mockSubjects[0].name,
+      folder: mockSubjects[0].folders[0].name,
+      file: mockSubjects[0].folders[0].files[0],
+      modal: null
+    };
+  };
+
+  const initialVault = getInitialStateFromUrl();
   const [subjects, setSubjects] = useState(mockSubjects);
-  const [activeSubject, setActiveSubject] = useState(mockSubjects[0].name);
-  const [activeFolder, setActiveFolder] = useState(mockSubjects[0].folders[0].name);
-  const [selectedFile, setSelectedFile] = useState(mockSubjects[0].folders[0].files[0]);
+  const [activeSubject, setActiveSubject] = useState(initialVault.subject);
+  const [activeFolder, setActiveFolder] = useState(initialVault.folder);
+  const [selectedFile, setSelectedFile] = useState(initialVault.file);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   // Modals state
   const [reminderTarget, setReminderTarget] = useState(null);
   const [showReminderModal, setShowReminderModal] = useState(false);
-  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+  const [showNewFolderModal, setShowNewFolderModal] = useState(initialVault.modal === 'new-folder');
   const [newFolderName, setNewFolderName] = useState('');
   const [targetSubjectForFolder, setTargetSubjectForFolder] = useState(mockSubjects[0].id);
 
-  // 3 Revision Modalities state
-  const [showKeyPointsModal, setShowKeyPointsModal] = useState(false);
-  const [showQuizModal, setShowQuizModal] = useState(false);
+  // New Document Modal state (replaces awkward window.prompt popup)
+  const [showNewDocModal, setShowNewDocModal] = useState(initialVault.modal === 'new-doc');
+  const [newDocName, setNewDocName] = useState('Lecture_Note_Kinetics.doc');
+  const [newDocSubjectId, setNewDocSubjectId] = useState(mockSubjects[0].id);
+  const [newDocFolderName, setNewDocFolderName] = useState(mockSubjects[0].folders[0].name);
+  const [newDocTemplate, setNewDocTemplate] = useState('lecture');
+
   const [showCreateRevModal, setShowCreateRevModal] = useState(false);
-  const [editorViewMode, setEditorViewMode] = useState('split');
+  const [editorViewMode, setEditorViewMode] = useState('edit');
 
-  // Handle URL query redirection (e.g. from Revision page clicking "Manual Revision")
+  // Handle URL query redirection if changed dynamically
   useEffect(() => {
-    const querySubject = searchParams.get('subject');
-    const queryFileId = searchParams.get('fileId');
-    const queryMode = searchParams.get('mode');
+    const params = new URLSearchParams(window.location.search);
+    const queryFileId = params.get('fileId') || searchParams.get('fileId');
+    const querySubject = params.get('subject') || searchParams.get('subject');
+    const queryMode = params.get('mode') || searchParams.get('mode');
+    const queryModal = params.get('modal') || searchParams.get('modal');
 
-    if (querySubject) {
+    if (queryModal === 'new-doc') {
+      setShowNewDocModal(true);
+    } else if (queryModal === 'new-folder') {
+      setShowNewFolderModal(true);
+    }
+
+    if (queryFileId) {
+      for (const subj of subjects) {
+        for (const folder of subj.folders) {
+          const foundFile = folder.files.find(f => f.id === queryFileId);
+          if (foundFile) {
+            setActiveSubject(subj.name);
+            setActiveFolder(folder.name);
+            setSelectedFile(foundFile);
+            break;
+          }
+        }
+      }
+    } else if (querySubject) {
       const foundSubj = subjects.find(s => s.name.toLowerCase() === querySubject.toLowerCase());
       if (foundSubj) {
         setActiveSubject(foundSubj.name);
-        if (queryFileId) {
-          for (const folder of foundSubj.folders) {
-            const foundFile = folder.files.find(f => f.id === queryFileId);
-            if (foundFile) {
-              setActiveFolder(folder.name);
-              setSelectedFile(foundFile);
-              break;
-            }
+        if (foundSubj.folders.length > 0) {
+          setActiveFolder(foundSubj.folders[0].name);
+          if (foundSubj.folders[0].files.length > 0) {
+            setSelectedFile(foundSubj.folders[0].files[0]);
           }
         }
       }
@@ -76,12 +154,26 @@ export default function NotesVault() {
   const handleFileUploaded = (newFile) => {
     setSubjects(prev => prev.map(subj => {
       if (subj.name === activeSubject) {
-        const updatedFolders = subj.folders.map(folder => {
-          if (folder.name === activeFolder) {
+        const hasFolder = subj.folders.some(f => f.name === activeFolder);
+        const targetFolderName = hasFolder ? activeFolder : (subj.folders[0]?.name || 'General Notes');
+        let folderMatched = false;
+        let updatedFolders = subj.folders.map(folder => {
+          if (folder.name === targetFolderName) {
+            folderMatched = true;
             return { ...folder, files: [newFile, ...folder.files] };
           }
           return folder;
         });
+
+        if (!folderMatched) {
+          updatedFolders = [{
+            id: `folder-${Date.now()}`,
+            name: targetFolderName,
+            reminder: { type: 'ai', status: 'AI Monitored', nextDate: '2026-09-20' },
+            files: [newFile]
+          }, ...subj.folders];
+        }
+
         return { ...subj, totalFiles: subj.totalFiles + 1, folders: updatedFolders };
       }
       return subj;
@@ -89,59 +181,153 @@ export default function NotesVault() {
     setSelectedFile(newFile);
   };
 
+  // Open Add Folder modal with target subject pre-selected
+  const handleOpenAddFolderModal = (subjectId = null) => {
+    const validSubjectId = (typeof subjectId === 'string') ? subjectId : null;
+    if (validSubjectId) {
+      setTargetSubjectForFolder(validSubjectId);
+    } else {
+      const activeSubjObj = subjects.find(s => s.name === activeSubject);
+      setTargetSubjectForFolder(activeSubjObj ? activeSubjObj.id : subjects[0].id);
+    }
+    setNewFolderName('');
+    setShowNewFolderModal(true);
+  };
+
   const handleCreateFolder = (e) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
+    const folderTrimmed = newFolderName.trim();
     const newF = {
       id: `folder-${Date.now()}`,
-      name: newFolderName.trim(),
+      name: folderTrimmed,
       reminder: { type: 'ai', status: 'AI Monitored', nextDate: '2026-09-20' },
       files: []
     };
 
+    let targetSubjName = activeSubject;
     setSubjects(prev => prev.map(subj => {
       if (subj.id === targetSubjectForFolder) {
+        targetSubjName = subj.name;
         return { ...subj, folders: [...subj.folders, newF] };
       }
       return subj;
     }));
 
+    setActiveSubject(targetSubjName);
+    setActiveFolder(folderTrimmed);
+    setSelectedFile(null);
     setShowNewFolderModal(false);
     setNewFolderName('');
   };
 
-  const handleCreateNewWebDoc = () => {
-    const docName = prompt('Enter document name (e.g. Spectral_Analysis.doc):') || `New_Document_${Date.now().toString().slice(-4)}.doc`;
+  // Open New Document modal (replaces awkward window.prompt)
+  const handleOpenNewDocModal = (target = null) => {
+    const validTarget = (target && !target.nativeEvent && typeof target === 'object' && (target.subjectName || target.subjectId)) ? target : null;
+    
+    let activeSubjObj = null;
+    if (validTarget?.subjectId) {
+      activeSubjObj = subjects.find(s => s.id === validTarget.subjectId);
+    } else if (validTarget?.subjectName) {
+      activeSubjObj = subjects.find(s => s.name === validTarget.subjectName);
+    } else {
+      activeSubjObj = subjects.find(s => s.name === activeSubject);
+    }
+    if (!activeSubjObj) activeSubjObj = subjects[0];
+
+    const targetSubjId = activeSubjObj.id;
+    const availableFolders = activeSubjObj.folders || [];
+    let targetFolder = '';
+    if (validTarget?.folderName && availableFolders.some(f => f.name === validTarget.folderName)) {
+      targetFolder = validTarget.folderName;
+    } else if (availableFolders.some(f => f.name === activeFolder)) {
+      targetFolder = activeFolder;
+    } else if (availableFolders.length > 0) {
+      targetFolder = availableFolders[0].name;
+    } else {
+      targetFolder = 'General Notes';
+    }
+
+    setNewDocSubjectId(targetSubjId);
+    setNewDocFolderName(targetFolder);
+    setNewDocName(`Lecture_Note_${Date.now().toString().slice(-4)}.doc`);
+    setNewDocTemplate('lecture');
+    setShowNewDocModal(true);
+  };
+
+  const handleSubjectChangeInDocModal = (newSubjId) => {
+    setNewDocSubjectId(newSubjId);
+    const chosenSubj = subjects.find(s => s.id === newSubjId);
+    if (chosenSubj && chosenSubj.folders.length > 0) {
+      setNewDocFolderName(chosenSubj.folders[0].name);
+    } else {
+      setNewDocFolderName('General Notes');
+    }
+  };
+
+  const handleCreateNewDoc = (e) => {
+    e.preventDefault();
+    if (!newDocName.trim()) return;
+    let fileName = newDocName.trim();
+    if (!fileName.includes('.')) {
+      fileName += '.doc';
+    }
+    const title = fileName.replace(/\.[^/.]+$/, '');
+
+    let starterHtml = '';
+    if (newDocTemplate === 'lecture') {
+      starterHtml = `<h2>${title}</h2><p>Synthesized core foundational principles and academic lecture analysis.</p><h3>Key Takeaways:</h3><ul><li>Primary theoretical concept and scope</li><li>Empirical evidence and experimental yields</li></ul><blockquote style="border-left: 3px solid #9e3c26; padding-left: 12px; margin: 12px 0; color: #78716c; font-style: italic;"><strong>Important Insight:</strong> High-yield exam principle for spaced review.</blockquote>`;
+    } else if (newDocTemplate === 'mechanism') {
+      starterHtml = `<h2>Mechanism Dossier: ${title}</h2><p>Detailed step-by-step reaction coordinate and intermediate stability analysis.</p><div style="background: rgba(158, 60, 38, 0.08); padding: 10px 14px; border-radius: 8px; font-family: monospace; font-weight: bold; margin: 12px 0; text-align: center;">Rate = k [Reactant A]² [Reactant B]</div><h3>Step-by-Step Pathway:</h3><ol><li><strong>Initiation:</strong> Nucleophilic attack disrupts the starting conjugate system.</li><li><strong>Rearomatization:</strong> Fast elimination restores thermodynamic ground state.</li></ol>`;
+    } else {
+      starterHtml = `<h2>${title}</h2><p>Start typing your research findings, formulas, and study notes here...</p>`;
+    }
+
     const newDoc = {
       id: `doc-${Date.now()}`,
-      name: docName,
+      name: fileName,
       type: 'doc',
-      size: '12 KB',
+      size: '14 KB',
       updatedAt: 'Just now',
       tags: ['Live Edit', 'Auto-Saved'],
       reminder: { type: 'ai', basis: 'SuperMemo-2 AI Spaced', interval: '3 days', score: 98, status: 'fresh' },
-      content: `# ${docName.replace(/\.[^/.]+$/, '')}\n\nStart typing your study notes here using Markdown and LaTeX notation.\n\n### Core Insights:\n- Point 1\n- Point 2\n\n$$Rate = k [A]^2$$`
+      content: starterHtml
     };
 
-    handleFileUploaded(newDoc);
-  };
+    let chosenSubjName = activeSubject;
+    const finalFolder = newDocFolderName.trim() || 'General Notes';
 
-  // Generate dynamic keypoints for active note
-  const activeKeyPoints = [
-    {
-      title: `${selectedFile?.name.replace(/\.[^/.]+$/, '')} Core Summary`,
-      content: selectedFile?.content?.slice(0, 180) || 'Primary theoretical foundation and lecture insights vectorized from your vault.',
-      formula: selectedFile?.type === 'doc' ? 'Rate = k [Ar-X] [Nu⁻]' : undefined
-    },
-    {
-      title: 'High-Yield Memory Anchor',
-      content: 'Critical concepts and edge-case exceptions prioritized for upcoming spaced repetition check.'
-    },
-    {
-      title: 'SuperMemo-2 Recall Calibration',
-      content: `Current stability score: ${selectedFile?.reminder?.score || 85}%. Reviewing now resets decay slope.`
-    }
-  ];
+    setSubjects(prev => prev.map(subj => {
+      if (subj.id === newDocSubjectId) {
+        chosenSubjName = subj.name;
+        let folderFound = false;
+        const updatedFolders = subj.folders.map(folder => {
+          if (folder.name === finalFolder) {
+            folderFound = true;
+            return { ...folder, files: [newDoc, ...folder.files] };
+          }
+          return folder;
+        });
+
+        if (!folderFound) {
+          updatedFolders.push({
+            id: `folder-${Date.now()}`,
+            name: finalFolder,
+            reminder: { type: 'ai', status: 'AI Monitored', nextDate: '2026-09-20' },
+            files: [newDoc]
+          });
+        }
+
+        return { ...subj, totalFiles: subj.totalFiles + 1, folders: updatedFolders };
+      }
+      return subj;
+    }));
+
+    setActiveSubject(chosenSubjName);
+    setActiveFolder(finalFolder);
+    setSelectedFile(newDoc);
+    setShowNewDocModal(false);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 animate-fade-in">
@@ -157,7 +343,7 @@ export default function NotesVault() {
           <span>/</span>
           <span>{activeFolder}</span>
           <span>/</span>
-          <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-semibold truncate">{selectedFile?.name}</span>
+          <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-semibold truncate">{selectedFile?.name || '(Empty Folder)'}</span>
         </div>
 
         {/* Quick Link to Dedicated Revision Page */}
@@ -183,13 +369,22 @@ export default function NotesVault() {
             Knowledge Vault & Notes Studio
           </h1>
           <p className="text-xs text-[rgb(var(--color-muted))] max-w-2xl mt-1 leading-relaxed">
-            Multi-modal academic archive, live Markdown & LaTeX notes studio, tactile PDF diagrams, and instant AI revision pathways.
+            Multi-modal academic archive, Word-style rich document editor, interactive PDF lecture previewer, and high-resolution diagram inspection.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={() => setShowNewFolderModal(true)}
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="px-3 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] hidden md:flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            title={showSidebar ? 'Collapse Taxonomy Sidebar' : 'Show Taxonomy Sidebar'}
+          >
+            {showSidebar ? <PanelLeftClose size={14} /> : <PanelLeftOpen size={14} />}
+            <span>{showSidebar ? 'Hide Tree' : 'Show Tree'}</span>
+          </button>
+
+          <button
+            onClick={() => handleOpenAddFolderModal()}
             className="px-3.5 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           >
             <FolderPlus size={14} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
@@ -197,11 +392,11 @@ export default function NotesVault() {
           </button>
 
           <button
-            onClick={handleCreateNewWebDoc}
+            onClick={() => handleOpenNewDocModal()}
             className="px-4 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-[#9e3c26]/25 cursor-pointer"
           >
             <Plus size={14} />
-            <span>+ New Web Doc</span>
+            <span>+ New Document</span>
           </button>
 
           <button
@@ -227,11 +422,11 @@ export default function NotesVault() {
 
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
           <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
-            <span>Live Web Docs</span>
+            <span>Rich Text Docs</span>
             <FileText size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
           </div>
           <div className="text-3xl font-bold font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1">14</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">Markdown + LaTeX formatted</div>
+          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">Word & Rich Text Formatted</div>
         </div>
 
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
@@ -253,204 +448,95 @@ export default function NotesVault() {
         </div>
       </div>
 
-      {/* Main Studio: Left File Taxonomy (4 cols) & Right Document Workspace (8 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Main Studio: Left File Taxonomy & Right Document / Previewer Workspace */}
+      <div className={`grid grid-cols-1 gap-6 items-start ${
+        showSidebar ? 'lg:grid-cols-12' : 'lg:grid-cols-1'
+      }`}>
         
         {/* Left Column: File Taxonomy & Uploader */}
-        <div className="lg:col-span-4 space-y-4">
-          <FileTree
-            subjects={subjects}
-            selectedFile={selectedFile}
-            onSelectFile={handleSelectFile}
-            onOpenReminderModal={handleOpenReminderModal}
-            onAddFolder={() => setShowNewFolderModal(true)}
-            onNewNote={handleCreateNewWebDoc}
-          />
-
-          <FileUploader
-            activeSubject={activeSubject}
-            activeFolder={activeFolder}
-            onFileUploaded={handleFileUploaded}
-          />
-        </div>
-
-        {/* Right Column: Multi-modal Document Studio & Revision Options */}
-        <div className="lg:col-span-8 space-y-4">
-          
-          {/* REVISION PATHWAY LAUNCHPAD FOR ACTIVE NOTE */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[rgb(var(--color-border))] pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] flex items-center justify-center font-bold">
-                  <Brain size={17} />
-                </span>
-                <div>
-                  <h3 className="font-bold text-sm text-[rgb(var(--color-text))] flex items-center gap-2">
-                    <span>Revision Pathways for:</span>
-                    <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-mono">{selectedFile?.name}</span>
-                  </h3>
-                  <p className="text-[11px] text-[rgb(var(--color-muted))]">
-                    Select your study mode below to revise this note or test your proficiency.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowCreateRevModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] text-xs font-semibold border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto shadow-2xs"
-              >
-                <Clock size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-                <span>+ Schedule Spaced Task</span>
-              </button>
-            </div>
-
-            {/* 3 Revision Action Cards (AI Key Points, AI Quiz, Manual Read) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-              
-              {/* Option 1: AI Key Points */}
-              <button
-                type="button"
-                onClick={() => setShowKeyPointsModal(true)}
-                className="p-3.5 rounded-xl border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-tertiary))] bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-card))] text-left transition-all cursor-pointer group shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-1.5 rounded-lg bg-[rgb(var(--color-tertiary-container))] text-[rgb(var(--color-tertiary))]">
-                      <Sparkles size={14} />
-                    </span>
-                    <span className="text-[10px] font-mono text-[rgb(var(--color-tertiary))] font-bold uppercase">
-                      Option 1
-                    </span>
-                  </div>
-                  <div className="font-bold text-xs text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-tertiary))] transition-colors">
-                    AI Key Points
-                  </div>
-                  <p className="text-[11px] text-[rgb(var(--color-muted))] leading-relaxed mt-1">
-                    Get high-yield bullet synthesis, key takeaways, and core formulas.
-                  </p>
-                </div>
-                <div className="mt-3 text-[10px] font-mono text-[rgb(var(--color-tertiary))] flex items-center gap-1 font-semibold">
-                  <span>View Key Points</span>
-                  <ArrowRight size={11} />
-                </div>
-              </button>
-
-              {/* Option 2: AI Practice Quiz */}
-              <button
-                type="button"
-                onClick={() => setShowQuizModal(true)}
-                className="p-3.5 rounded-xl border border-[rgb(var(--color-border))] hover:border-[#9e3c26] bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-card))] text-left transition-all cursor-pointer group shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-1.5 rounded-lg bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3]">
-                      <Brain size={14} />
-                    </span>
-                    <span className="text-[10px] font-mono text-[#9e3c26] dark:text-[#ffb4a3] font-bold uppercase">
-                      Option 2
-                    </span>
-                  </div>
-                  <div className="font-bold text-xs text-[rgb(var(--color-text))] group-hover:text-[#9e3c26] dark:group-hover:text-[#ffb4a3] transition-colors">
-                    AI Practice Quiz
-                  </div>
-                  <p className="text-[11px] text-[rgb(var(--color-muted))] leading-relaxed mt-1">
-                    Determine proficiency score (%) with precision diagnostic challenges.
-                  </p>
-                </div>
-                <div className="mt-3 text-[10px] font-mono text-[#9e3c26] dark:text-[#ffb4a3] flex items-center gap-1 font-semibold">
-                  <span>Start AI Quiz</span>
-                  <ArrowRight size={11} />
-                </div>
-              </button>
-
-              {/* Option 3: Manual Revision */}
-              <button
-                type="button"
-                onClick={() => setEditorViewMode('preview')}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer group shadow-xs flex flex-col justify-between ${
-                  editorViewMode === 'preview'
-                    ? 'border-amber-500 bg-amber-500/10'
-                    : 'border-[rgb(var(--color-border))] hover:border-amber-500 bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-card))]'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-1.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
-                      <BookOpen size={14} />
-                    </span>
-                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold uppercase">
-                      Option 3
-                    </span>
-                  </div>
-                  <div className="font-bold text-xs text-[rgb(var(--color-text))] group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                    Manual Revision
-                  </div>
-                  <p className="text-[11px] text-[rgb(var(--color-muted))] leading-relaxed mt-1">
-                    Distraction-free read & tactile study of full document notes below.
-                  </p>
-                </div>
-                <div className="mt-3 text-[10px] font-mono text-amber-600 dark:text-amber-400 flex items-center gap-1 font-semibold">
-                  <span>{editorViewMode === 'preview' ? 'Active in Reader' : 'Open Reader Mode'}</span>
-                  <ArrowRight size={11} />
-                </div>
-              </button>
-
-            </div>
-          </div>
-
-          {/* Note Editor Studio */}
-          <div className="min-h-[580px]">
-            <NoteEditor
-              activeFile={selectedFile}
+        {showSidebar && (
+          <div className="lg:col-span-4 space-y-4">
+            <FileTree
+              subjects={subjects}
+              selectedFile={selectedFile}
               activeSubject={activeSubject}
               activeFolder={activeFolder}
-              forcedViewMode={editorViewMode}
-              onOpenKeyPoints={() => setShowKeyPointsModal(true)}
-              onOpenQuiz={() => setShowQuizModal(true)}
-              onSave={(newContent) => {
-                if (selectedFile) {
-                  setSelectedFile(prev => ({ ...prev, content: newContent }));
+              onSelectFile={handleSelectFile}
+              onSelectFolder={(subjName, fName) => {
+                setActiveSubject(subjName);
+                setActiveFolder(fName);
+                const targetSubj = subjects.find(s => s.name === subjName);
+                const targetFolder = targetSubj?.folders.find(f => f.name === fName);
+                if (targetFolder && targetFolder.files.length > 0) {
+                  setSelectedFile(targetFolder.files[0]);
+                } else {
+                  setSelectedFile(null);
                 }
               }}
+              onOpenReminderModal={handleOpenReminderModal}
+              onAddFolder={handleOpenAddFolderModal}
+              onNewNote={handleOpenNewDocModal}
+            />
+
+            <FileUploader
+              activeSubject={activeSubject}
+              activeFolder={activeFolder}
+              onFileUploaded={handleFileUploaded}
             />
           </div>
+        )}
 
+        {/* Right Column: Multi-modal Document Studio / Previewer Workspace */}
+        <div className={showSidebar ? 'lg:col-span-8 space-y-4' : 'lg:col-span-12 space-y-4'}>
+          <div className="min-h-[620px]">
+            {selectedFile ? (
+              <NoteEditor
+                activeFile={selectedFile}
+                activeSubject={activeSubject}
+                activeFolder={activeFolder}
+                forcedViewMode={editorViewMode}
+                onSave={(newContent) => {
+                  if (selectedFile) {
+                    setSelectedFile(prev => ({ ...prev, content: newContent }));
+                  }
+                }}
+              />
+            ) : (
+              <div className="bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] rounded-2xl p-12 text-center shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none flex flex-col items-center justify-center min-h-[580px]">
+                <div className="w-16 h-16 rounded-3xl bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] flex items-center justify-center mb-4">
+                  <FolderPlus size={30} />
+                </div>
+                <div className="text-[10px] font-mono uppercase tracking-wider text-[#9e3c26] dark:text-[#ffb4a3] font-bold mb-1">
+                  {activeSubject}
+                </div>
+                <h3 className="text-xl font-bold text-[rgb(var(--color-text))] mb-2">
+                  Folder "{activeFolder}" is Empty
+                </h3>
+                <p className="text-xs text-[rgb(var(--color-muted))] max-w-md mb-6 leading-relaxed">
+                  No notes, PDFs, or diagrams have been added to this folder yet. Create a new document or drag and drop files into the uploader on the left.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={() => handleOpenNewDocModal({ subjectName: activeSubject, folderName: activeFolder })}
+                    className="px-4 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-[#9e3c26]/20 cursor-pointer transition-all"
+                  >
+                    <Plus size={14} />
+                    <span>+ Create Document in this Folder</span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenAddFolderModal()}
+                    className="px-4 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <FolderPlus size={14} />
+                    <span>Add Another Folder</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
-
-      {/* AI Key Points Modal */}
-      <AIKeyPointsModal
-        isOpen={showKeyPointsModal}
-        onClose={() => setShowKeyPointsModal(false)}
-        topic={selectedFile?.name.replace(/\.[^/.]+$/, '')}
-        subject={activeSubject}
-        keyPoints={activeKeyPoints}
-        onStartQuiz={() => {
-          setShowKeyPointsModal(false);
-          setShowQuizModal(true);
-        }}
-        onReadNotes={() => {
-          setShowKeyPointsModal(false);
-          setEditorViewMode('preview');
-        }}
-      />
-
-      {/* AI Proficiency Quiz Modal */}
-      <AIProficiencyQuizModal
-        isOpen={showQuizModal}
-        onClose={() => setShowQuizModal(false)}
-        topic={selectedFile?.name.replace(/\.[^/.]+$/, '')}
-        subject={activeSubject}
-        onViewKeyPoints={() => {
-          setShowQuizModal(false);
-          setShowKeyPointsModal(true);
-        }}
-        onReadNotes={() => {
-          setShowQuizModal(false);
-          setEditorViewMode('preview');
-        }}
-      />
 
       {/* Create Spaced Revision Modal */}
       <CreateRevisionModal
@@ -474,10 +560,18 @@ export default function NotesVault() {
         />
       )}
 
-      {/* Add Folder Modal */}
+      {/* Add Folder Modal (Clean UI Modal) */}
       {showNewFolderModal && (
         <Modal isOpen={showNewFolderModal} onClose={() => setShowNewFolderModal(false)} maxWidth="max-w-sm">
-          <h3 className="text-base font-bold mb-3">Add Discipline Folder</h3>
+          <div className="flex items-center gap-2.5 mb-3">
+            <span className="w-8 h-8 rounded-xl bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] flex items-center justify-center font-bold">
+              <FolderPlus size={16} />
+            </span>
+            <div>
+              <h3 className="text-base font-bold text-[rgb(var(--color-text))]">Add Discipline Folder</h3>
+              <p className="text-[11px] text-[rgb(var(--color-muted))]">Create a categorized section inside your vault.</p>
+            </div>
+          </div>
           <form onSubmit={handleCreateFolder} className="space-y-3">
             <div>
               <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
@@ -510,9 +604,128 @@ export default function NotesVault() {
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-medium text-xs cursor-pointer shadow-sm"
+              className="w-full py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-medium text-xs cursor-pointer shadow-sm transition-colors"
             >
               Create Folder in Vault
+            </button>
+          </form>
+        </Modal>
+      )}
+
+      {/* Create New Document Modal (Modern UI Modal replacing awkward prompt) */}
+      {showNewDocModal && (
+        <Modal isOpen={showNewDocModal} onClose={() => setShowNewDocModal(false)} maxWidth="max-w-md">
+          <div className="flex items-center gap-2.5 mb-3">
+            <span className="w-8 h-8 rounded-xl bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] flex items-center justify-center font-bold">
+              <FileText size={18} />
+            </span>
+            <div>
+              <h3 className="text-base font-bold text-[rgb(var(--color-text))]">
+                Create New Academic Document
+              </h3>
+              <p className="text-[11px] text-[rgb(var(--color-muted))]">
+                Draft formatted study notes, mechanism analyses, or lecture findings.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleCreateNewDoc} className="space-y-4">
+            <div>
+              <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
+                Document Name
+              </label>
+              <input
+                type="text"
+                required
+                value={newDocName}
+                onChange={(e) => setNewDocName(e.target.value)}
+                placeholder="e.g. Spectral_Analysis_Kinetics.doc"
+                className="w-full px-3 py-2 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26]"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
+                  Discipline / Subject
+                </label>
+                <select
+                  value={newDocSubjectId}
+                  onChange={(e) => handleSubjectChangeInDocModal(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))]"
+                >
+                  {subjects.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
+                  Target Folder
+                </label>
+                {(() => {
+                  const currSubj = subjects.find(s => s.id === newDocSubjectId);
+                  const currFolders = currSubj?.folders || [];
+                  if (currFolders.length > 0) {
+                    return (
+                      <select
+                        value={newDocFolderName}
+                        onChange={(e) => setNewDocFolderName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))]"
+                      >
+                        {currFolders.map(f => (
+                          <option key={f.id} value={f.name}>{f.name}</option>
+                        ))}
+                      </select>
+                    );
+                  } else {
+                    return (
+                      <input
+                        type="text"
+                        value={newDocFolderName}
+                        onChange={(e) => setNewDocFolderName(e.target.value)}
+                        placeholder="e.g. General Notes"
+                        className="w-full px-3 py-2 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))]"
+                      />
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1.5 font-semibold">
+                Starter Template
+              </label>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                {[
+                  { id: 'lecture', label: 'Lecture Note', desc: 'Summary & takeaways' },
+                  { id: 'mechanism', label: 'Reaction Proof', desc: 'Step-by-step & rate' },
+                  { id: 'blank', label: 'Blank Canvas', desc: 'Empty document' }
+                ].map(tmpl => (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => setNewDocTemplate(tmpl.id)}
+                    className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                      newDocTemplate === tmpl.id
+                        ? 'border-[#9e3c26] bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] font-semibold'
+                        : 'border-[rgb(var(--color-border))] bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-muted))]'
+                    }`}
+                  >
+                    <div className="font-semibold text-xs text-[rgb(var(--color-text))]">{tmpl.label}</div>
+                    <div className="text-[10px] text-[rgb(var(--color-muted))] mt-0.5">{tmpl.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs cursor-pointer shadow-sm transition-all mt-2"
+            >
+              Create Document in Vault
             </button>
           </form>
         </Modal>

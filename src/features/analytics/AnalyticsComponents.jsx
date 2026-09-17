@@ -342,7 +342,7 @@ export function RetentionCurveSection() {
             <span className="text-[10px] text-[#9e3c26] dark:text-[#ffb4a3]">{data.stage}</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-emerald-600 dark:text-emerald-400 font-semibold">
-            <span>🧠 With RivisOnly:</span>
+            <span>🧠 With Rivisonly:</span>
             <span className="font-bold">{data.aiRetention}% Remembered</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-red-600 dark:text-red-400">
@@ -374,7 +374,7 @@ export function RetentionCurveSection() {
             Your Memory Retention vs. Normal Forgetting
           </h3>
           <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
-            Compare how much you remember using RivisOnly's spaced reviews vs. passive cramming.
+            Compare how much you remember using Rivisonly's spaced reviews vs. passive cramming.
           </p>
         </div>
 
@@ -389,7 +389,7 @@ export function RetentionCurveSection() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-xs font-bold text-[rgb(var(--color-text))]">With RivisOnly Spaced Reviews</span>
+              <span className="text-xs font-bold text-[rgb(var(--color-text))]">With Rivisonly Spaced Reviews</span>
             </div>
             <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">91.4% Recall</span>
           </div>
@@ -439,7 +439,7 @@ export function RetentionCurveSection() {
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#aiRetentionGrad)"
-                name="RivisOnly Recall (~91%)"
+                name="Rivisonly Recall (~91%)"
               />
               <Line
                 type="monotone"

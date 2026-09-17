@@ -1,4 +1,4 @@
-# 🎓 RivisOnly — Your AI Study Partner & Focus Sanctuary
+# 🎓 Rivisonly — Your AI Study Partner & Focus Sanctuary
 
 <div align="center">
 
@@ -10,7 +10,7 @@
 
 **Study Smarter. Retain Deeper. Built for Pure Focus.**
 
-An architectural, distraction-free digital study sanctum crafted for scholars, engineers, and focused minds. RivisOnly integrates synchronized virtual study rooms, AI-powered spaced repetition, active 1v1 recall duels, a full markdown notes vault, and an ambient floating lo-fi radio into one cohesive workspace.
+An architectural, distraction-free digital study sanctum crafted for scholars, engineers, and focused minds. Rivisonly integrates synchronized virtual study rooms, AI-powered spaced repetition, active 1v1 recall duels, a full markdown notes vault, and an ambient floating lo-fi radio into one cohesive workspace.
 
 [Explore Features](#-core-features) • [Quick Start](#-quick-start) • [Tech Stack](#%EF%B8%8F-tech-stack) • [Project Structure](#-project-structure)
 
@@ -18,9 +18,9 @@ An architectural, distraction-free digital study sanctum crafted for scholars, e
 
 ---
 
-## 🌟 Why RivisOnly?
+## 🌟 Why Rivisonly?
 
-Most modern study workflows require juggling 5+ disjointed applications: a standalone timer, noisy chat apps, music players, flashcard decks, and messy note trees. **RivisOnly** consolidates the entire cognitive cycle into a unified, high-aesthetic ecosystem:
+Most modern study workflows require juggling 5+ disjointed applications: a standalone timer, noisy chat apps, music players, flashcard decks, and messy note trees. **Rivisonly** consolidates the entire cognitive cycle into a unified, high-aesthetic ecosystem:
 
 ```
 [ Focus (Pomodoro) ] ──▶ [ Note & Vault ] ──▶ [ Spaced Repetition ] ──▶ [ 1v1 Duels ] ──▶ [ Deep Analytics ]
@@ -95,8 +95,8 @@ Most modern study workflows require juggling 5+ disjointed applications: a stand
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/Ashmit-kansal/RivisOnly.git
-   cd RivisOnly
+   git clone https://github.com/Ashmit-kansal/Rivisonly.git
+   cd Rivisonly
    ```
 
 2. **Install dependencies**:
@@ -126,7 +126,7 @@ Most modern study workflows require juggling 5+ disjointed applications: a stand
 ## 📂 Project Structure
 
 ```text
-RivisOnly/
+Rivisonly/
 ├── public/                     # Static assets and icons
 │   ├── favicon.svg
 │   └── icons.svg

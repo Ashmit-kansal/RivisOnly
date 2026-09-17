@@ -1,50 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import PomodoroTimer from '../features/pomodoro/PomodoroTimer';
+import { usePomodoro } from '../context/PomodoroContext';
 import { 
   Flame, CheckCircle2, Clock, Plus, Trash2, 
-  Sparkles, Target, BarChart2, BookOpen, Layers
+  Target, BarChart2
 } from 'lucide-react';
 
 export default function Pomodoro() {
-  const [activeSubject, setActiveSubject] = useState('Organic Chemistry II');
-
-  // Focus Stats with LocalStorage
-  const [stats, setStats] = useState(() => {
-    try {
-      const saved = localStorage.getItem('rivisonly-focus-stats');
-      return saved ? JSON.parse(saved) : {
-        todayMinutes: 225, // 3h 45m
-        goalMinutes: 300,  // 5h 00m
-        streakDays: 14,
-        completedSessions: 6,
-        subjectMinutes: {
-          'Organic Chemistry II': 105,
-          'Neuroscience': 60,
-          'Linear Algebra': 60
-        }
-      };
-    } catch {
-      return {
-        todayMinutes: 225,
-        goalMinutes: 300,
-        streakDays: 14,
-        completedSessions: 6,
-        subjectMinutes: {
-          'Organic Chemistry II': 105,
-          'Neuroscience': 60,
-          'Linear Algebra': 60
-        }
-      };
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('rivisonly-focus-stats', JSON.stringify(stats));
-    } catch (e) {
-      console.warn('Could not save focus stats', e);
-    }
-  }, [stats]);
+  const { stats, history } = usePomodoro();
 
   // Session Tasks / Goals Checklist with LocalStorage
   const [tasks, setTasks] = useState(() => {
@@ -73,52 +36,6 @@ export default function Pomodoro() {
     }
   }, [tasks]);
 
-  // Session History Log
-  const [history, setHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('rivisonly-pomodoro-history');
-      return saved ? JSON.parse(saved) : [
-        { id: 1, subject: 'Organic Chemistry II', color: '#9e3c26', duration: 25, timestamp: '10:45 AM' },
-        { id: 2, subject: 'Neuroscience', color: '#4b41e1', duration: 25, timestamp: '11:15 AM' },
-        { id: 3, subject: 'Linear Algebra', color: '#059669', duration: 25, timestamp: '12:00 PM' },
-      ];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('rivisonly-pomodoro-history', JSON.stringify(history));
-    } catch (e) {
-      console.warn('Could not save history', e);
-    }
-  }, [history]);
-
-  // Callback when a focus session completes
-  const handleTimeLogged = (minutes, subjectName) => {
-    setStats(prev => {
-      const prevSubj = prev.subjectMinutes || {};
-      const newSubjTime = (prevSubj[subjectName] || 0) + minutes;
-      return {
-        ...prev,
-        todayMinutes: prev.todayMinutes + minutes,
-        completedSessions: prev.completedSessions + 1,
-        subjectMinutes: {
-          ...prevSubj,
-          [subjectName]: newSubjTime
-        }
-      };
-    });
-  };
-
-  const handleSessionCompleted = (session) => {
-    setHistory(prev => [
-      { id: Date.now(), ...session },
-      ...prev.slice(0, 9) // Keep last 10 entries
-    ]);
-  };
-
   // Task Actions
   const handleAddTask = (e) => {
     e.preventDefault();
@@ -143,14 +60,9 @@ export default function Pomodoro() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8 animate-fade-in-up">
       
-      {/* Top Header & Breadcrumbs */}
+      {/* Top Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <div className="text-[11px] font-mono tracking-widest uppercase text-[rgb(var(--color-muted))] flex items-center gap-1.5 mb-1">
-            <span>FOCUS STUDIO // MATRIX</span>
-            <span>/</span>
-            <span className="text-[rgb(var(--color-primary))] font-semibold">ACTIVE SESSION</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
             Pomodoro Focus Studio
           </h1>
@@ -167,7 +79,6 @@ export default function Pomodoro() {
               <span className="font-bold text-sm text-[rgb(var(--color-text))]">
                 {todayHours}h {todayRemainingMins}m
               </span>
-              <span className="text-[10px] text-emerald-500 font-medium">+{todayRemainingMins}m</span>
             </div>
           </div>
 
@@ -202,12 +113,7 @@ export default function Pomodoro() {
         
         {/* Left Column: Pomodoro Studio */}
         <div className="lg:col-span-8 space-y-6">
-          <PomodoroTimer
-            activeSubject={activeSubject}
-            setActiveSubject={setActiveSubject}
-            onTimeLogged={handleTimeLogged}
-            onSessionCompleted={handleSessionCompleted}
-          />
+          <PomodoroTimer />
 
           {/* Goal Progress Bar Card */}
           <div className="p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-xs space-y-3">

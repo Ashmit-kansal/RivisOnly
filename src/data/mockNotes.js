@@ -21,23 +21,7 @@ export const mockSubjects = [
             updatedAt: '12 mins ago',
             tags: ['Live Edit', 'Auto-Saved', 'High-Yield'],
             reminder: { type: 'ai', basis: 'SuperMemo-2 AI Spaced', interval: '3 days', score: 62, status: 'decaying', nextDate: '2026-09-18' },
-            content: `# Unit 3: Nucleophilic Aromatic Substitution (SNAr)
-
-Reaction rate depends strongly on the electron-withdrawing power of substituents situated in the *ortho* or *para* positions relative to the leaving halogen.
-
-> **The Meisenheimer Complex**:
-> Unlike aliphatic SN2 substitutions, this is an addition-elimination mechanism. The negative charge is delocalized onto electronegative nitro oxygens.
-
-$$Rate = k [Ar-X][Nu^-]$$
-
-### Key Steps:
-1. **Addition of Nucleophile (Rate Determining Step)**: Attack disrupts the 6pi aromatic ring to generate the sp3 hybridized Meisenheimer intermediate.
-2. **Expulsion of Halide Leaving Group**: Fast rearomatization regenerates the planar aromatic system with thermodynamic release.
-
-### Experimental Yields:
-- p-Nitrochlorobenzene + NaOMe -> 88%
-- 2,4-Dinitrochlorobenzene + NaOMe -> 97% (reaction completes under 5 mins at 25°C)
-`,
+            content: `<h2>Unit 3: Nucleophilic Aromatic Substitution (SNAr)</h2><p>Reaction rate depends strongly on the electron-withdrawing power of substituents situated in the <strong>ortho</strong> or <strong>para</strong> positions relative to the leaving halogen.</p><blockquote style="border-left: 3px solid #9e3c26; padding-left: 12px; margin: 12px 0; color: #78716c; font-style: italic;"><strong>The Meisenheimer Complex:</strong> Unlike aliphatic SN2 substitutions, this is an addition-elimination mechanism. The negative charge is delocalized onto electronegative nitro oxygens.</blockquote><div style="background: rgba(158, 60, 38, 0.08); padding: 10px 14px; border-radius: 8px; font-family: monospace; font-weight: bold; margin: 12px 0; text-align: center;">Rate = k [Ar-X] [Nu⁻]</div><h3>Key Reaction Steps:</h3><ol><li><strong>Addition of Nucleophile (Rate Determining Step):</strong> Attack disrupts the 6π aromatic ring to generate the sp3 hybridized Meisenheimer intermediate.</li><li><strong>Expulsion of Halide Leaving Group:</strong> Fast rearomatization regenerates the planar aromatic system with thermodynamic release.</li></ol><h3>Experimental Yields Observed:</h3><ul><li>p-Nitrochlorobenzene + NaOMe → <strong>88% yield</strong></li><li>2,4-Dinitrochlorobenzene + NaOMe → <strong>97% yield</strong> (reaction completes under 5 mins at 25°C)</li></ul>`
           },
           {
             id: 'file-2',
@@ -67,7 +51,7 @@ $$Rate = k [Ar-X][Nu^-]$$
             updatedAt: '3 days ago',
             tags: ['Synced', 'Cloud Stored'],
             reminder: { type: 'manual', basis: 'Manual Schedule', interval: 'In 5 days', score: 92, status: 'fresh', nextDate: '2026-09-20' },
-            content: `Experimental protocol for Friedel-Crafts Acylation of Anisole using AlCl3 catalyst in dry dichloromethane solvent.`
+            content: `<h2>Lab Report: Friedel-Crafts Acylation of Anisole</h2><p>This experiment investigates the regioselective acylation of anisole catalyzed by anhydrous aluminum chloride (AlCl3) in dry dichloromethane.</p><h3>Experimental Protocol:</h3><ul><li>Equip a dry 100 mL round-bottom flask with a reflux condenser and CaCl2 drying tube.</li><li>Dissolve 5.4 g anisole in 30 mL dry DCM and cool to 0°C in an ice-water bath.</li><li>Add 7.3 g anhydrous AlCl3 portionwise over 15 minutes while stirring continuously.</li><li>Add acetyl chloride (4.2 mL) dropwise via addition funnel.</li></ul><blockquote><strong>Safety Notice:</strong> HCl gas is evolved vigorously during reagent addition. Keep apparatus connected to gas absorption trap.</blockquote>`
           }
         ]
       },
@@ -84,13 +68,7 @@ $$Rate = k [Ar-X][Nu^-]$$
             updatedAt: 'Yesterday',
             tags: ['Due Today 4:00 PM', 'High Priority'],
             reminder: { type: 'manual', basis: 'Manual Task', interval: 'Today 4:00 PM', score: 78, status: 'stable', nextDate: '2026-09-15' },
-            content: `# Chirality & Optical Activity Flash Summary
-
-- Enantiomers rotate plane-polarized light in equal and opposite directions ([alpha]D).
-- Diastereomers have different physical properties (melting point, Rf, boiling point).
-- Meso compounds contain internal stereocenters with an internal plane of symmetry (C2 or sigma plane).
-- Cahn-Ingold-Prelog (CIP) priority rules: atomic number based; isotope tiebreaker by mass.
-`
+            content: `<h2>Chirality & Optical Activity Flash Summary</h2><ul><li><strong>Enantiomers:</strong> Rotate plane-polarized light in equal and opposite directions ([α]D).</li><li><strong>Diastereomers:</strong> Have different physical properties (melting points, Rf values, boiling points).</li><li><strong>Meso Compounds:</strong> Contain internal stereocenters with an internal plane of symmetry (C2 or σ plane).</li><li><strong>Cahn-Ingold-Prelog (CIP) Rules:</strong> Prioritized by atomic number; isotopes differentiated by mass number.</li></ul>`
           }
         ]
       }
@@ -118,17 +96,7 @@ $$Rate = k [Ar-X][Nu^-]$$
             updatedAt: '4 days ago',
             tags: ['AI Vectorized', 'Exam Prep'],
             reminder: { type: 'ai', basis: 'AI Forgetting Curve', interval: '3 days', score: 88, status: 'fresh', nextDate: '2026-09-19' },
-            content: `# Spectral Decomposition & Orthogonal Projections
-
-Every real symmetric matrix A can be orthogonally diagonalized:
-$$A = Q \\Lambda Q^T$$
-where Q is orthogonal ($Q^T Q = I$) and $\\Lambda$ is a real diagonal matrix of eigenvalues.
-
-### Properties:
-1. Eigenvectors corresponding to distinct eigenvalues are mutually orthogonal.
-2. The algebraic multiplicity of each eigenvalue equals its geometric multiplicity.
-3. Positive definite matrices satisfy $x^T A x > 0$ for all non-zero $x$.
-`
+            content: `<h2>Spectral Decomposition & Orthogonal Projections</h2><p>Every real symmetric matrix A can be orthogonally diagonalized: <strong>A = Q Λ Qᵀ</strong>, where Q is an orthogonal matrix and Λ is a real diagonal matrix of eigenvalues.</p><h3>Key Properties:</h3><ol><li>Eigenvectors corresponding to distinct eigenvalues are mutually orthogonal.</li><li>The algebraic multiplicity of each eigenvalue equals its geometric multiplicity.</li><li>Positive definite matrices satisfy <strong>xᵀ A x &gt; 0</strong> for all non-zero vectors x.</li></ol>`
           },
           {
             id: 'file-7',
@@ -166,16 +134,7 @@ where Q is orthogonal ($Q^T Q = I$) and $\\Lambda$ is a real diagonal matrix of 
             updatedAt: '5 days ago',
             tags: ['Decay Alert', 'AI Re-test'],
             reminder: { type: 'ai', basis: 'SuperMemo-2 AI Spaced', interval: 'Today', score: 58, status: 'decaying', nextDate: '2026-09-15' },
-            content: `# Long-Term Potentiation (LTP) in Hippocampal CA1
-
-Long-term potentiation serves as the primary cellular correlate of episodic memory consolidation.
-
-### Induction Cascade:
-- **Glutamate Release**: Activates postsynaptic AMPA receptors causing sodium influx and partial depolarization.
-- **Mg2+ Block Relief**: Membrane depolarization to approx. -30 mV expels the magnesium ion blocking the NMDA receptor channel pore.
-- **Calcium Influx**: Intracellular Ca2+ activates CaMKII and Protein Kinase C (PKC).
-- **Retrograde Signaling**: Nitric oxide (NO) diffuses back to the presynaptic terminal to enhance subsequent vesicular probability.
-`
+            content: `<h2>Long-Term Potentiation (LTP) in Hippocampal CA1</h2><p>Long-term potentiation serves as the primary cellular correlate of episodic memory consolidation and synaptic plasticity.</p><h3>Induction Cascade:</h3><ul><li><strong>Glutamate Release:</strong> Activates postsynaptic AMPA receptors causing rapid sodium influx.</li><li><strong>Mg²⁺ Block Relief:</strong> Membrane depolarization to ~-30 mV expels the magnesium ion blocking the NMDA channel pore.</li><li><strong>Calcium Influx:</strong> Intracellular Ca²⁺ activates CaMKII and Protein Kinase C (PKC).</li><li><strong>Retrograde Signaling:</strong> Nitric oxide (NO) diffuses back to presynaptic terminal to enhance subsequent vesicular probability.</li></ul>`
           }
         ]
       }
@@ -203,18 +162,15 @@ Long-term potentiation serves as the primary cellular correlate of episodic memo
             updatedAt: '1 week ago',
             tags: ['Manual Review', 'Policy Papers'],
             reminder: { type: 'manual', basis: 'Manual Schedule', interval: 'In 5 days', score: 84, status: 'stable', nextDate: '2026-09-21' },
-            content: `# Taylor Rule & Central Bank Reaction Functions
-
-$$i_t = r^* + \\pi_t + 0.5(\\pi_t - \\pi^*) + 0.5(y_t - y^*)$$
-
-Where:
-- $i_t$: Target short-term nominal interest rate
-- $r^*$: Equilibrium real interest rate (natural rate)
-- $\\pi_t$: Current rate of inflation
-- $y_t - y^*$: Log output gap
-`
+            content: `<h2>Taylor Rule & Central Bank Reaction Functions</h2><div style="background: rgba(158, 60, 38, 0.08); padding: 10px 14px; border-radius: 8px; font-family: monospace; font-weight: bold; margin: 12px 0; text-align: center;">i_t = r* + π_t + 0.5(π_t - π*) + 0.5(y_t - y*)</div><h3>Variable Definitions:</h3><ul><li><strong>i_t:</strong> Target short-term nominal interest rate (Federal Funds Rate)</li><li><strong>r*:</strong> Equilibrium real interest rate (neutral rate of interest)</li><li><strong>π_t:</strong> Current rate of inflation measured over trailing quarters</li><li><strong>y_t - y*:</strong> Logarithmic output gap (percent deviation of real GDP from potential)</li></ul>`
           }
         ]
+      },
+      {
+        id: 'folder-6',
+        name: 'Open Economy & Exchange Rates',
+        reminder: { type: 'ai', status: 'AI Monitored', nextDate: '2026-09-24' },
+        files: []
       }
     ]
   }

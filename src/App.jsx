@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { PomodoroProvider } from './context/PomodoroContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import LofiPlayer from './components/lofi/LofiPlayer';
@@ -19,10 +20,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <div className="min-h-screen flex flex-col bg-[rgb(var(--color-surface))] text-[rgb(var(--color-text))] transition-colors selection:bg-[rgb(var(--color-primary))]/20 selection:text-[rgb(var(--color-primary))]">
-            {/* Global Sticky Navbar */}
-            <Navbar />
+        <PomodoroProvider>
+          <BrowserRouter>
+            <div className="min-h-screen flex flex-col bg-[rgb(var(--color-surface))] text-[rgb(var(--color-text))] transition-colors selection:bg-[rgb(var(--color-primary))]/20 selection:text-[rgb(var(--color-primary))]">
+              {/* Global Sticky Navbar */}
+              <Navbar />
 
             {/* Main Content View */}
             <main className="flex-1 pb-6">
@@ -48,7 +50,8 @@ export default function App() {
             <SignupModal />
           </div>
         </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+      </PomodoroProvider>
+    </AuthProvider>
+  </ThemeProvider>
   );
 }

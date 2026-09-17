@@ -20,12 +20,12 @@ export default function Landing() {
 
   const faqs = [
     {
-      q: 'What makes RivisOnly different from Notion, Forest, or Discord?',
-      a: 'Most tools force you to juggle five different tabs: a timer app, a noisy Discord server, Spotify for music, flashcard software, and scattered PDF notes. RivisOnly integrates all five into a single architectural workspace calibrated specifically for cognitive flow — with zero clutter and zero distractions.'
+      q: 'What makes Rivisonly different from Notion, Forest, or Discord?',
+      a: 'Most tools force you to juggle five different tabs: a timer app, a noisy Discord server, Spotify for music, flashcard software, and scattered PDF notes. Rivisonly integrates all five into a single architectural workspace calibrated specifically for cognitive flow — with zero clutter and zero distractions.'
     },
     {
       q: 'How do the Virtual Study Rooms work?',
-      a: 'In RivisOnly, study rooms are synchronized by real-time focus timers, active subjects, and live accountability pulses. You experience genuine peer motivation and shared focus without the awkwardness or pressure of turning on a webcam.'
+      a: 'In Rivisonly, study rooms are synchronized by real-time focus timers, active subjects, and live accountability pulses. You experience genuine peer motivation and shared focus without the awkwardness or pressure of turning on a webcam.'
     },
     {
       q: 'How does the AI Spaced Repetition engine work?',
@@ -36,7 +36,7 @@ export default function Landing() {
       a: 'Not at all! Duels are an optional, gamified active recall tool. When you want to test your mastery before an exam, you can challenge a peer or classmate to a 10-question rapid quiz duel to solidify high-yield concepts.'
     },
     {
-      q: 'Is RivisOnly free to use?',
+      q: 'Is Rivisonly free to use?',
       a: 'Yes! Core focus rooms, Pomodoro tracking, the Lo-Fi radio sanctuary, and basic note-taking vaults are 100% free for individual scholars.'
     }
   ];
@@ -353,7 +353,7 @@ export default function Landing() {
             THE ARCHITECTURAL DIFFERENCE
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[rgb(var(--color-text))] tracking-tight">
-            Why Top Students Choose RivisOnly Over Fragmented Apps
+            Why Top Students Choose Rivisonly Over Fragmented Apps
           </h2>
           <p className="text-sm sm:text-base text-[rgb(var(--color-muted))] leading-relaxed">
             Stop switching between Spotify, YouTube, Discord, Forest, and Notion. We engineered a single, unified environment dedicated to deep analytical recall.
@@ -385,7 +385,7 @@ export default function Landing() {
               2. Spaced Memory Science
             </h3>
             <p className="text-xs sm:text-sm text-[rgb(var(--color-muted))] leading-relaxed">
-              Passive re-reading is a proven illusion of competence. RivisOnly calculates your forgetting curve decay and prompts active retrieval right when memory starts fading.
+              Passive re-reading is a proven illusion of competence. Rivisonly calculates your forgetting curve decay and prompts active retrieval right when memory starts fading.
             </p>
           </div>
 
@@ -544,7 +544,7 @@ export default function Landing() {
             <div className="space-y-3">
               <Quote size={24} className="text-emerald-500 opacity-40" />
               <p className="text-xs sm:text-sm text-[rgb(var(--color-text))] leading-relaxed">
-                "The floating Lo-Fi music player built directly into RivisOnly is pure genius. 20 chill tracks without YouTube ads or distracting tabs."
+                "The floating Lo-Fi music player built directly into Rivisonly is pure genius. 20 chill tracks without YouTube ads or distracting tabs."
               </p>
             </div>
             <div className="flex items-center gap-3 pt-2 border-t border-[rgb(var(--color-border))]">

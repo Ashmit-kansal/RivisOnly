@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Presentation & synopsis assets
+*.pptx
+*.ppt
+~$*.pptx
+~$*.ppt
+*PPT*.html
+public/kiet_logo.*
+public/logo_b64.*

@@ -2,14 +2,20 @@ import React, { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { usePomodoro } from '../../context/PomodoroContext';
 import { Moon, Sun, ChevronDown, LogOut, Sparkles } from 'lucide-react';
 import Logo from '../ui/Logo';
 
 export default function Navbar() {
   const { isDark, toggleTheme } = useTheme();
   const { user, logout, setShowLogin, setShowSignup } = useAuth();
+  const { isRunning, timeLeft, currentSubject, mode } = usePomodoro();
   const [userDropdown, setUserDropdown] = useState(false);
   const navigate = useNavigate();
+
+  const mins = Math.floor(timeLeft / 60);
+  const secs = timeLeft % 60;
+  const formattedTime = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')};`;
 
   const navLinks = [
     { name: 'Pomodoro', path: '/pomodoro' },
@@ -27,7 +33,7 @@ export default function Navbar() {
         <Link to="/" className="flex items-center gap-2.5 group">
           <Logo className="w-8 h-8 rounded-lg shadow-md shadow-[#18181B]/25 group-hover:scale-105 transition-transform" />
           <span className="font-bold text-lg tracking-tight text-[rgb(var(--color-text))]">
-            RivisOnly
+            Rivisonly
           </span>
         </Link>
 
@@ -58,17 +64,20 @@ export default function Navbar() {
         {/* Right side controls: Live Timer Pill, Theme toggle, Auth / Profile */}
         <div className="flex items-center gap-2.5">
           
-          {/* Synchronized Session pill matching screenshot */}
+          {/* Synchronized Live Session pill */}
           <Link
             to="/pomodoro"
-            className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] text-xs font-mono text-[rgb(var(--color-text))] shadow-xs hover:border-[#9e3c26]/50 transition-colors"
-            title="Active Pomodoro Session in progress"
+            className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] text-xs font-mono text-[rgb(var(--color-text))] shadow-xs hover:border-[rgb(var(--color-primary))]/50 transition-colors"
+            title={`${currentSubject?.name || 'Focus'} • ${formattedTime.replace(';', '')} (${isRunning ? 'Running' : 'Paused'})`}
           >
-            <span className="w-2 h-2 rounded-full bg-[#9e3c26] dark:bg-[#e26f54] animate-pulse" />
-            <span className="font-semibold">Organic Chem</span>
+            <span 
+              className={`w-2 h-2 rounded-full shrink-0 ${isRunning ? 'animate-pulse' : ''}`}
+              style={{ backgroundColor: currentSubject?.color || '#9e3c26' }}
+            />
+            <span className="font-semibold truncate max-w-[110px]">{currentSubject?.name || 'Focus'}</span>
             <span className="text-[rgb(var(--color-muted))]">•</span>
-            <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-medium">18:42</span>
-            <span className="text-[10px] text-[rgb(var(--color-muted))]">⏸</span>
+            <span className="text-[rgb(var(--color-primary))] font-medium">{formattedTime.replace(';', '')}</span>
+            <span className="text-[10px] text-[rgb(var(--color-muted))]">{isRunning ? '▶' : '⏸'}</span>
           </Link>
 
           {/* Dark / Light Mode Toggle */}

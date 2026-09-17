@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Logo className="w-5 h-5 rounded" />
-          <span className="font-semibold text-[rgb(var(--color-text))] font-sans">RivisOnly</span>
+          <span className="font-semibold text-[rgb(var(--color-text))] font-sans">Rivisonly</span>
           <span className="hidden sm:inline">— Your AI Study Partner & Real-Time Focus Space</span>
         </div>
         <div>
