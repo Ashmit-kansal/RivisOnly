@@ -108,7 +108,7 @@ export default function Analytics() {
                 AI Retention Diagnostic Complete
               </h3>
               <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
-                Recommended focus adjustment: Allocate +25 minutes to Linear Algebra (Orthogonal Projection) before Friday's decay threshold.
+                Recommended focus adjustment: Allocate +25 minutes to Linear Algebra (Orthogonal Projection) before Friday's review deadline.
               </p>
             </div>
           </div>

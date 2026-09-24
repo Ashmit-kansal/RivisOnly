@@ -402,7 +402,7 @@ export function RetentionCurveSection() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-0.5 bg-red-500 border-dashed" />
-              <span className="text-xs font-bold text-[rgb(var(--color-text))]">Without Review (Natural Decay)</span>
+              <span className="text-xs font-bold text-[rgb(var(--color-text))]">Without Review (Natural Forgetting)</span>
             </div>
             <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400">12.0% Recall</span>
           </div>

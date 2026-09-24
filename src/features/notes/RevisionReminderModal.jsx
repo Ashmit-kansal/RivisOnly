@@ -20,7 +20,7 @@ export default function RevisionReminderModal({ isOpen, onClose, targetItem, onS
         onSave({
           itemId: targetItem.id,
           type: reminderMode,
-          date: reminderMode === 'ai' ? 'Calculated by SuperMemo-2' : `${manualDate} ${manualTime}`,
+          date: reminderMode === 'ai' ? 'Calculated by Smart Spacing' : `${manualDate} ${manualTime}`,
           frequency,
           priority
         });
@@ -80,7 +80,7 @@ export default function RevisionReminderModal({ isOpen, onClose, targetItem, onS
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[rgb(var(--color-text))] flex items-center gap-1.5">
                 <Sparkles size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-                SuperMemo-2 Adaptive Decay Tracking
+                Smart Adaptive Retention Tracking
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[rgb(var(--color-secondary-container))] text-[rgb(var(--color-secondary))]">
                 Active

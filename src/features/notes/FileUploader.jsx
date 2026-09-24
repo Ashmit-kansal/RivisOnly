@@ -95,7 +95,7 @@ export default function FileUploader({ activeSubject, activeFolder, onFileUpload
         fileUrl,
         reminder: { 
           type: 'ai', 
-          basis: 'SuperMemo-2 AI Spaced', 
+          basis: 'Smart Spaced Review', 
           interval: '3 days', 
           score: 95, 
           status: 'fresh',

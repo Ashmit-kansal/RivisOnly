@@ -70,7 +70,7 @@ export default function AIProficiencyQuizModal({
 
   const getProficiencyLabel = () => {
     if (proficiencyPercent >= 80) return { label: 'Mastered (Scholar Grade)', color: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' };
-    if (proficiencyPercent >= 60) return { label: 'Proficient (Decay Stabilized)', color: 'text-sky-600 dark:text-sky-400', badge: 'bg-sky-500/10 text-sky-700 dark:text-sky-400' };
+    if (proficiencyPercent >= 60) return { label: 'Proficient (Retention Secured)', color: 'text-sky-600 dark:text-sky-400', badge: 'bg-sky-500/10 text-sky-700 dark:text-sky-400' };
     return { label: 'Review Recommended', color: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' };
   };
 
@@ -189,7 +189,7 @@ export default function AIProficiencyQuizModal({
               Proficiency Diagnostic Complete!
             </h3>
             <p className="text-xs text-[rgb(var(--color-muted))] max-w-sm mx-auto mt-1">
-              Your recall stability has been updated in the Ebbinghaus SM-2 decay matrix for <strong>{topic}</strong>.
+              Your retention score has been updated in your smart review schedule for <strong>{topic}</strong>.
             </p>
           </div>
 
@@ -205,12 +205,12 @@ export default function AIProficiencyQuizModal({
 
           <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto text-left text-xs font-mono">
             <div className="p-2.5 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-xs">
-              <div className="text-[10px] text-[rgb(var(--color-muted))]">DECAY SHIFT</div>
+              <div className="text-[10px] text-[rgb(var(--color-muted))]">RETENTION BOOST</div>
               <div className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">+18% Stability</div>
             </div>
             <div className="p-2.5 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-xs">
               <div className="text-[10px] text-[rgb(var(--color-muted))]">NEXT RE-TEST</div>
-              <div className="font-bold text-[rgb(var(--color-text))] mt-0.5">In 7 Days (SM-2)</div>
+              <div className="font-bold text-[rgb(var(--color-text))] mt-0.5">In 7 Days (Smart Review)</div>
             </div>
           </div>
 

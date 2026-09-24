@@ -29,7 +29,7 @@ export default function Landing() {
     },
     {
       q: 'How does the AI Spaced Repetition engine work?',
-      a: 'When you upload lecture slides or take notes in our markdown editor, the AI maps out core concepts and calculates your memory retention decay using the Ebbinghaus curve. It automatically suggests flashcards and reviews right before you forget them.'
+      a: 'When you upload lecture slides or take notes in our markdown editor, the AI maps out core concepts and calculates your memory retention using smart spaced repetition. It automatically suggests flashcards and reviews right before you forget them.'
     },
     {
       q: 'Are 1v1 Quiz Duels mandatory?',
@@ -385,7 +385,7 @@ export default function Landing() {
               2. Spaced Memory Science
             </h3>
             <p className="text-xs sm:text-sm text-[rgb(var(--color-muted))] leading-relaxed">
-              Passive re-reading is a proven illusion of competence. Rivisonly calculates your forgetting curve decay and prompts active retrieval right when memory starts fading.
+              Passive re-reading is a proven illusion of competence. Rivisonly calculates your retention schedule and prompts active retrieval right when memory starts fading.
             </p>
           </div>
 

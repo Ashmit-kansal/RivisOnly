@@ -415,7 +415,7 @@ export default function DuelModal({
 
               <div className="mb-2">
                 <div className="flex justify-between text-[11px] font-mono text-[rgb(var(--color-muted))] mb-1">
-                  <span>Your Deck Mastery Decay Curve</span>
+                  <span>Your Deck Mastery & Retention Score</span>
                   <span className="font-bold text-[rgb(var(--color-secondary))]">84% Solid</span>
                 </div>
                 <ProgressBar value={84} color="bg-emerald-500" height="h-1.5" />

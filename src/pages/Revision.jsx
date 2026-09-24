@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import RevisionReminderModal from '../features/notes/RevisionReminderModal';
 import AIKeyPointsModal from '../features/revision/AIKeyPointsModal';
 import AIProficiencyQuizModal from '../features/revision/AIProficiencyQuizModal';
 import CreateRevisionModal from '../features/revision/CreateRevisionModal';
 import ProgressBar from '../components/ui/ProgressBar';
 import { mockRevisionCards } from '../data/mockRevision';
+import { loadStoredSubjects } from '../utils/notesStorage';
 import { 
   Sparkles, BookOpen, Clock, CheckCircle2, 
   Brain, AlertTriangle, ArrowUpRight, Filter, 
@@ -32,15 +32,15 @@ const INTERVAL_STAGES = [
     day: 'Day 3',
     title: 'The 48h Cliff',
     timingBadge: 'Critical Recall Spike',
-    status: 'High Decay Risk ⚠️',
+    status: 'High Forgetting Risk ⚠️',
     statusColor: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
     isCritical: true,
     retention: '85%',
-    decayDrop: 'Without review: 70% of details vanish here',
+    decayDrop: 'Without review: 70% of details fade here',
     scienceSummary: 'This is the steepest slope of the forgetting curve. Testing yourself when retrieval starts feeling challenging triggers active recall, sparking neuroplastic growth.',
     actionStep: 'Take a quick 3-minute AI Quiz Sprint. Testing your brain forces formulas and mechanisms to lock in.',
     recommendedMode: 'AI Practice Quiz Sprint',
-    cardFilterKeys: ['Day 3', 'decaying', 'Decay Alert'],
+    cardFilterKeys: ['Day 3', 'decaying', 'Decay Alert', 'Needs Review', 'Review Due'],
   },
   {
     interval: 'Interval 3',
@@ -64,7 +64,7 @@ const INTERVAL_STAGES = [
     status: 'Exam-Resistant',
     statusColor: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
     retention: '94%',
-    decayDrop: 'Very low decay; recall speed improves',
+    decayDrop: 'High recall speed; memory remains solid',
     scienceSummary: 'By Day 14, spacing has multiplied retrieval speed. A quick check-in ensures you can access formulas effortlessly under timed exam stress.',
     actionStep: 'Run through a quick challenge question or compare with adjacent concepts in other chapters.',
     recommendedMode: 'AI Quiz or Quick Problem Solving',
@@ -94,18 +94,27 @@ export default function Revision() {
   const [activeIntervalIndex, setActiveIntervalIndex] = useState(1);
 
   // Modals state
-  const [showReminderModal, setShowReminderModal] = useState(false);
-  const [reminderTarget, setReminderTarget] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createModalInterval, setCreateModalInterval] = useState('Day 3');
   const [selectedTopicForKeyPoints, setSelectedTopicForKeyPoints] = useState(null);
   const [selectedTopicForQuiz, setSelectedTopicForQuiz] = useState(null);
 
-  const subjects = [
+  const storedVaultSubjects = loadStoredSubjects();
+  const baseSubjects = [
     { id: 'all', name: 'All Subjects', icon: '📚' },
     { id: 'Organic Chemistry II', name: 'Organic Chemistry II', icon: '🧬', code: 'CHEM-302' },
     { id: 'Linear Algebra', name: 'Linear Algebra', icon: '📐', code: 'MATH-204' },
     { id: 'Cognitive Neuroscience', name: 'Cognitive Neuroscience', icon: '🧠', code: 'NEUR-410' },
   ];
+  const extraSubjects = (storedVaultSubjects || [])
+    .filter(s => !baseSubjects.some(b => b.name.toLowerCase() === s.name.toLowerCase()))
+    .map(s => ({
+      id: s.id || s.name,
+      name: s.name,
+      icon: '📖',
+      code: s.code || ''
+    }));
+  const subjects = [...baseSubjects, ...extraSubjects];
 
   // Filtered cards
   const filteredCards = revisionCards.filter(card => {
@@ -118,61 +127,41 @@ export default function Revision() {
     return true;
   });
 
-  const handleOpenReminder = (item) => {
-    setReminderTarget(item || { id: 'rev-schedule', name: activeSubject, subject: activeSubject });
-    setShowReminderModal(true);
-  };
-
   const handleCreateRevision = (newCard) => {
     setRevisionCards(prev => [newCard, ...prev]);
+    if (activeSubject !== 'All Subjects' && activeSubject !== newCard.subject) {
+      setActiveSubject(newCard.subject);
+    }
   };
 
   const handleRedirectToNotes = (card) => {
     const subjectParam = encodeURIComponent(card.subject);
     const fileParam = card.noteFileId ? `&fileId=${card.noteFileId}` : '';
-    navigate(`/notes?subject=${subjectParam}${fileParam}&mode=manual`);
+    const folderParam = card.folder ? `&folder=${encodeURIComponent(card.folder)}` : '';
+    navigate(`/notes?subject=${subjectParam}${folderParam}${fileParam}&mode=manual`);
   };
+
+  // Live dynamic statistics computed from active queue
+  const avgRetention = Math.round(
+    revisionCards.reduce((acc, c) => acc + (Number(c.decayScore) || 85), 0) / (revisionCards.length || 1)
+  );
+  const dueRetestCount = revisionCards.filter(c => c.decayStatus === 'decaying' || (c.decayScore && Number(c.decayScore) < 75)).length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8 animate-fade-in">
       
-      {/* Top Spatial Header & Ebbinghaus Sync Strip */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 border-b border-[rgb(var(--color-border))] text-xs font-mono text-[rgb(var(--color-muted))] gap-3">
-        <div className="flex items-center gap-1.5 truncate">
-          <span>SCHOLAR REPOSITORY</span>
-          <span>/</span>
-          <span className="text-[rgb(var(--color-text))] font-semibold">Revision Hub</span>
-          <span>/</span>
-          <span className="px-1.5 py-0.5 rounded bg-[rgb(var(--color-container-high))] text-[rgb(var(--color-primary))] font-bold">
-            Ebbinghaus Matrix v4.8
-          </span>
-          <span>/</span>
-          <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-semibold truncate">{activeSubject}</span>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="flex items-center gap-2 bg-[rgb(var(--color-container-low))] px-3 py-1 rounded-full border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))]">
-            <span className="w-2 h-2 rounded-full bg-[rgb(var(--color-secondary))] animate-pulse" />
-            <span className="font-bold text-[10px] tracking-wider uppercase text-[rgb(var(--color-secondary))]">Decay Engine Live</span>
-            <span className="text-[10px] hidden md:inline">• Next Decay Evaluation: 04:12 UTC</span>
-          </div>
-
-          <button
-            onClick={() => handleOpenReminder(null)}
-            className="px-3.5 py-1.5 rounded-lg bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] text-xs border border-[rgb(var(--color-border))] transition-colors cursor-pointer shadow-xs flex items-center gap-1.5 font-medium"
-          >
-            <Clock size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-            <span>Spaced Settings</span>
-          </button>
-        </div>
-      </div>
-
       {/* Hero Title & Actions */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-[#9e3c26] dark:text-[#ffb4a3] font-bold mb-1">
-            <Brain size={14} />
-            <span>ADAPTIVE SPACED REPETITION & DUAL SYNTHESIS</span>
+          <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-[#9e3c26] dark:text-[#ffb4a3] font-bold mb-1 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Brain size={14} />
+              <span>SMART SPACED REPETITION & RETENTION</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 ml-1 bg-[rgb(var(--color-container-low))] px-2.5 py-0.5 rounded-full border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))] font-normal">
+              <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-secondary))] animate-pulse" />
+              <span className="font-bold text-[rgb(var(--color-secondary))]">Memory Engine Active</span>
+            </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
             Active Revision & Retention Hub
@@ -185,7 +174,10 @@ export default function Revision() {
         <div className="flex items-center gap-2.5">
           {/* + Create Revision Button */}
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setCreateModalInterval('Day 3');
+              setShowCreateModal(true);
+            }}
             className="px-4 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-[#9e3c26]/25 transition-all cursor-pointer"
           >
             <Plus size={15} />
@@ -203,59 +195,6 @@ export default function Revision() {
         </div>
       </div>
 
-      {/* 3 Core Revision Modalities Banner */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#9e3c26] dark:bg-[#ffb4a3]" />
-            <h3 className="font-bold text-xs sm:text-sm text-[rgb(var(--color-text))]">
-              3 Adaptive Pathways to Revise Any Topic
-            </h3>
-          </div>
-          <span className="text-[10px] font-mono text-[rgb(var(--color-muted))]">Select on any card below</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Modality 1 */}
-          <div className="p-3.5 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] space-y-1.5 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-md bg-[rgb(var(--color-tertiary-container))] text-[rgb(var(--color-tertiary))]">
-                <Sparkles size={14} />
-              </span>
-              <span className="font-bold text-xs text-[rgb(var(--color-text))]">1. AI Key Points</span>
-            </div>
-            <p className="text-[11px] text-[rgb(var(--color-muted))] leading-relaxed">
-              Auto-extracted high-yield synthesis bullets, core formulas, and memory anchors.
-            </p>
-          </div>
-
-          {/* Modality 2 */}
-          <div className="p-3.5 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] space-y-1.5 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-md bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3]">
-                <Brain size={14} />
-              </span>
-              <span className="font-bold text-xs text-[rgb(var(--color-text))]">2. AI Practice Quiz</span>
-            </div>
-            <p className="text-[11px] text-[rgb(var(--color-muted))] leading-relaxed">
-              Interactive quiz sprint that evaluates proficiency score (%) and refreshes decay.
-            </p>
-          </div>
-
-          {/* Modality 3 */}
-          <div className="p-3.5 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] space-y-1.5 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400">
-                <BookOpen size={14} />
-              </span>
-              <span className="font-bold text-xs text-[rgb(var(--color-text))]">3. Manual Revision</span>
-            </div>
-            <p className="text-[11px] text-[rgb(var(--color-muted))] leading-relaxed">
-              Redirects directly into the original document in Notes Vault for deep reading.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Subject Filter Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
@@ -289,20 +228,20 @@ export default function Revision() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
           <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
-            <span>Decay Curve Health</span>
+            <span>Memory Health Score</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
           </div>
-          <div className="text-3xl font-bold font-mono text-[rgb(var(--color-secondary))] mt-1.5">91.4%</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">3 topics near recall threshold</div>
+          <div className="text-3xl font-bold font-mono text-[rgb(var(--color-secondary))] mt-1.5">{avgRetention}%</div>
+          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">{dueRetestCount} topic{dueRetestCount === 1 ? '' : 's'} need review soon</div>
         </div>
 
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
           <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
-            <span>Due For AI Re-test</span>
+            <span>Topics Due for Review</span>
             <AlertTriangle size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
           </div>
-          <div className="text-3xl font-bold font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1.5">12</div>
-          <div className="text-[11px] font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1 font-medium">Spectroscopy & NMR priority</div>
+          <div className="text-3xl font-bold font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1.5">{dueRetestCount}</div>
+          <div className="text-[11px] font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1 font-medium">Ready for active recall</div>
         </div>
 
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
@@ -320,7 +259,7 @@ export default function Revision() {
             <Sparkles size={13} className="text-amber-500" />
           </div>
           <div className="text-3xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1.5">+22%</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">SuperMemo-2 interval boost</div>
+          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">Smart Spacing Boost</div>
         </div>
       </div>
 
@@ -346,7 +285,7 @@ export default function Revision() {
             </span>
             {[
               { id: 'all', label: 'All Items' },
-              { id: 'decaying', label: 'Decay Critical' },
+              { id: 'decaying', label: 'Needs Review' },
               { id: 'ai', label: 'AI Optimized' },
               { id: 'manual', label: 'Manual Tasks' },
             ].map(f => (
@@ -407,10 +346,10 @@ export default function Revision() {
                     {card.description}
                   </p>
 
-                  {/* Decay Score Progress */}
+                  {/* Memory Strength Progress */}
                   <div className="space-y-1 mb-4 p-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
                     <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="text-[rgb(var(--color-muted))]">Recall Stability:</span>
+                      <span className="text-[rgb(var(--color-muted))]">Memory Strength:</span>
                       <span className={`font-bold ${isDecaying ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                         {card.decayScore}%
                       </span>
@@ -681,7 +620,10 @@ export default function Revision() {
 
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={() => {
+                      setCreateModalInterval(currentStage.day);
+                      setShowCreateModal(true);
+                    }}
                     className="w-full py-1.5 px-2.5 rounded-lg bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-text))] text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                   >
                     <Plus size={12} />
@@ -699,7 +641,10 @@ export default function Revision() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => {
+                    setCreateModalInterval(currentStage.day);
+                    setShowCreateModal(true);
+                  }}
                   className="font-bold text-[#9e3c26] dark:text-[#ffb4a3] hover:underline cursor-pointer shrink-0 text-xs flex items-center gap-1"
                 >
                   <span>Create Spaced Schedule</span>
@@ -751,20 +696,9 @@ export default function Revision() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         defaultSubject={activeSubject === 'All Subjects' ? 'Organic Chemistry II' : activeSubject}
+        defaultInterval={createModalInterval}
         onCreate={handleCreateRevision}
       />
-
-      {/* Spaced Revision Reminder Modal */}
-      {showReminderModal && (
-        <RevisionReminderModal
-          isOpen={showReminderModal}
-          onClose={() => setShowReminderModal(false)}
-          targetItem={reminderTarget}
-          onSave={(schedule) => {
-            alert(`Spaced schedule configured for ${reminderTarget?.name || activeSubject}: Basis = ${schedule.type.toUpperCase()}`);
-          }}
-        />
-      )}
 
     </div>
   );

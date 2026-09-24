@@ -218,7 +218,7 @@ export default function NotesVault() {
         fileUrl,
         reminder: { 
           type: 'ai', 
-          basis: 'SuperMemo-2 AI Spaced', 
+          basis: 'Smart Spaced Review', 
           interval: '3 days', 
           score: 95, 
           status: 'fresh',
@@ -489,7 +489,7 @@ export default function NotesVault() {
       size: '14 KB',
       updatedAt: 'Just now',
       tags: ['Live Edit', 'Auto-Saved'],
-      reminder: { type: 'ai', basis: 'SuperMemo-2 AI Spaced', interval: '3 days', score: 98, status: 'fresh' },
+      reminder: { type: 'ai', basis: 'Smart Spaced Review', interval: '3 days', score: 98, status: 'fresh' },
       content: starterHtml
     };
 
@@ -569,7 +569,7 @@ export default function NotesVault() {
                 type: schedule.type,
                 status: 'scheduled',
                 interval: schedule.type === 'ai' ? 'AI Spaced (3d)' : schedule.date,
-                basis: schedule.type === 'ai' ? 'SuperMemo-2 AI Spaced' : 'Manual Schedule',
+                basis: schedule.type === 'ai' ? 'Smart Spaced Review' : 'Manual Schedule',
                 nextDate: schedule.date
               }
             };
@@ -590,7 +590,7 @@ export default function NotesVault() {
           type: schedule.type,
           status: 'scheduled',
           interval: schedule.type === 'ai' ? 'AI Spaced (3d)' : schedule.date,
-          basis: schedule.type === 'ai' ? 'SuperMemo-2 AI Spaced' : 'Manual Schedule',
+          basis: schedule.type === 'ai' ? 'Smart Spaced Review' : 'Manual Schedule',
           nextDate: schedule.date
         }
       }) : null);

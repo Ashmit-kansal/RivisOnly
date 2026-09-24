@@ -11,7 +11,7 @@ export const mockSubjects = [
       {
         id: 'folder-1',
         name: 'Reaction Mechanisms',
-        reminder: { type: 'ai', status: 'Decay Alert (62%)', nextDate: '2026-09-18' },
+        reminder: { type: 'ai', status: 'Needs Review (62%)', nextDate: '2026-09-18' },
         files: [
           {
             id: 'file-1',
@@ -20,7 +20,7 @@ export const mockSubjects = [
             size: '34 KB',
             updatedAt: '12 mins ago',
             tags: ['Live Edit', 'Auto-Saved', 'High-Yield'],
-            reminder: { type: 'ai', basis: 'SuperMemo-2 AI Spaced', interval: '3 days', score: 62, status: 'decaying', nextDate: '2026-09-18' },
+            reminder: { type: 'ai', basis: 'Smart Spaced Review', interval: '3 days', score: 62, status: 'decaying', nextDate: '2026-09-18' },
             content: `<h2>Unit 3: Nucleophilic Aromatic Substitution (SNAr)</h2><p>Reaction rate depends strongly on the electron-withdrawing power of substituents situated in the <strong>ortho</strong> or <strong>para</strong> positions relative to the leaving halogen.</p><blockquote style="border-left: 3px solid #9e3c26; padding-left: 12px; margin: 12px 0; color: #78716c; font-style: italic;"><strong>The Meisenheimer Complex:</strong> Unlike aliphatic SN2 substitutions, this is an addition-elimination mechanism. The negative charge is delocalized onto electronegative nitro oxygens.</blockquote><div style="background: rgba(158, 60, 38, 0.08); padding: 10px 14px; border-radius: 8px; font-family: monospace; font-weight: bold; margin: 12px 0; text-align: center;">Rate = k [Ar-X] [Nu⁻]</div><h3>Key Reaction Steps:</h3><ol><li><strong>Addition of Nucleophile (Rate Determining Step):</strong> Attack disrupts the 6π aromatic ring to generate the sp3 hybridized Meisenheimer intermediate.</li><li><strong>Expulsion of Halide Leaving Group:</strong> Fast rearomatization regenerates the planar aromatic system with thermodynamic release.</li></ol><h3>Experimental Yields Observed:</h3><ul><li>p-Nitrochlorobenzene + NaOMe → <strong>88% yield</strong></li><li>2,4-Dinitrochlorobenzene + NaOMe → <strong>97% yield</strong> (reaction completes under 5 mins at 25°C)</li></ul>`
           },
           {
@@ -119,12 +119,12 @@ export const mockSubjects = [
     color: '#2d7d46',
     totalFiles: 28,
     decayAlert: true,
-    revisionDue: 'Decay Alert',
+    revisionDue: 'Needs Review',
     folders: [
       {
         id: 'folder-4',
         name: 'Synaptic Plasticity & Memory',
-        reminder: { type: 'ai', status: 'Decay Alert (58%)', nextDate: '2026-09-16' },
+        reminder: { type: 'ai', status: 'Needs Review (58%)', nextDate: '2026-09-16' },
         files: [
           {
             id: 'file-8',
@@ -132,8 +132,8 @@ export const mockSubjects = [
             type: 'doc',
             size: '56 KB',
             updatedAt: '5 days ago',
-            tags: ['Decay Alert', 'AI Re-test'],
-            reminder: { type: 'ai', basis: 'SuperMemo-2 AI Spaced', interval: 'Today', score: 58, status: 'decaying', nextDate: '2026-09-15' },
+            tags: ['Needs Review', 'AI Re-test'],
+            reminder: { type: 'ai', basis: 'Smart Spaced Review', interval: 'Today', score: 58, status: 'decaying', nextDate: '2026-09-15' },
             content: `<h2>Long-Term Potentiation (LTP) in Hippocampal CA1</h2><p>Long-term potentiation serves as the primary cellular correlate of episodic memory consolidation and synaptic plasticity.</p><h3>Induction Cascade:</h3><ul><li><strong>Glutamate Release:</strong> Activates postsynaptic AMPA receptors causing rapid sodium influx.</li><li><strong>Mg²⁺ Block Relief:</strong> Membrane depolarization to ~-30 mV expels the magnesium ion blocking the NMDA channel pore.</li><li><strong>Calcium Influx:</strong> Intracellular Ca²⁺ activates CaMKII and Protein Kinase C (PKC).</li><li><strong>Retrograde Signaling:</strong> Nitric oxide (NO) diffuses back to presynaptic terminal to enhance subsequent vesicular probability.</li></ul>`
           }
         ]
