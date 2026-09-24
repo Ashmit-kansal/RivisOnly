@@ -30,6 +30,24 @@ const DEFAULT_DURATIONS = {
   autoStartFocus: false,
 };
 
+export const DEFAULT_STATS = {
+  todayMinutes: 225,
+  goalMinutes: 300,
+  streakDays: 14,
+  completedSessions: 6,
+  subjectMinutes: {
+    'Organic Chemistry II': 105,
+    'Neuroscience': 60,
+    'Linear Algebra': 60
+  }
+};
+
+export const DEFAULT_HISTORY = [
+  { id: 1, subject: 'Organic Chemistry II', color: '#9e3c26', duration: 25, timestamp: '10:45 AM' },
+  { id: 2, subject: 'Neuroscience', color: '#4b41e1', duration: 25, timestamp: '11:15 AM' },
+  { id: 3, subject: 'Linear Algebra', color: '#059669', duration: 25, timestamp: '12:00 PM' },
+];
+
 export function PomodoroProvider({ children }) {
   // 1. SUBJECTS STATE
   const [subjects, setSubjects] = useState(() => {
@@ -139,29 +157,9 @@ export function PomodoroProvider({ children }) {
   const [stats, setStats] = useState(() => {
     try {
       const saved = localStorage.getItem('rivisonly-focus-stats');
-      return saved ? JSON.parse(saved) : {
-        todayMinutes: 225,
-        goalMinutes: 300,
-        streakDays: 14,
-        completedSessions: 6,
-        subjectMinutes: {
-          'Organic Chemistry II': 105,
-          'Neuroscience': 60,
-          'Linear Algebra': 60
-        }
-      };
+      return saved ? JSON.parse(saved) : DEFAULT_STATS;
     } catch {
-      return {
-        todayMinutes: 225,
-        goalMinutes: 300,
-        streakDays: 14,
-        completedSessions: 6,
-        subjectMinutes: {
-          'Organic Chemistry II': 105,
-          'Neuroscience': 60,
-          'Linear Algebra': 60
-        }
-      };
+      return DEFAULT_STATS;
     }
   });
 
@@ -176,13 +174,9 @@ export function PomodoroProvider({ children }) {
   const [history, setHistory] = useState(() => {
     try {
       const saved = localStorage.getItem('rivisonly-pomodoro-history');
-      return saved ? JSON.parse(saved) : [
-        { id: 1, subject: 'Organic Chemistry II', color: '#9e3c26', duration: 25, timestamp: '10:45 AM' },
-        { id: 2, subject: 'Neuroscience', color: '#4b41e1', duration: 25, timestamp: '11:15 AM' },
-        { id: 3, subject: 'Linear Algebra', color: '#059669', duration: 25, timestamp: '12:00 PM' },
-      ];
+      return saved ? JSON.parse(saved) : DEFAULT_HISTORY;
     } catch {
-      return [];
+      return DEFAULT_HISTORY;
     }
   });
 
@@ -362,6 +356,7 @@ export function PomodoroProvider({ children }) {
         setTimeLeft(remainingSec);
 
         if (remainingSec <= 0) {
+          targetEndTimeRef.current = null;
           handleSessionComplete();
         }
       };
@@ -430,20 +425,47 @@ export function PomodoroProvider({ children }) {
   const skipTimer = () => {
     setIsRunning(false);
     targetEndTimeRef.current = null;
+
     if (mode === 'focus') {
-      if (intervalCount >= durations.cyclesBeforeLong) {
-        setMode('long');
-        const nextSecs = (durations.long || 15) * 60;
-        setTimeLeft(nextSecs);
-        setInitialDuration(nextSecs);
-        setIntervalCount(1);
-      } else {
-        setMode('short');
-        const nextSecs = (durations.short || 5) * 60;
-        setTimeLeft(nextSecs);
-        setInitialDuration(nextSecs);
-        setIntervalCount(prev => prev + 1);
+      const elapsedSecs = Math.max(0, initialDuration - timeLeft);
+      const elapsedMins = Math.floor(elapsedSecs / 60);
+
+      // If user worked for at least 1 minute before skipping, log it
+      if (elapsedMins >= 1) {
+        setStats(prev => {
+          const prevSubj = prev.subjectMinutes || {};
+          const newSubjTime = (prevSubj[currentSubject.name] || 0) + elapsedMins;
+          return {
+            ...prev,
+            todayMinutes: prev.todayMinutes + elapsedMins,
+            completedSessions: prev.completedSessions + 1,
+            subjectMinutes: {
+              ...prevSubj,
+              [currentSubject.name]: newSubjTime
+            }
+          };
+        });
+
+        setHistory(prev => [
+          {
+            id: Date.now(),
+            subject: currentSubject.name,
+            color: currentSubject.color,
+            duration: elapsedMins,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          },
+          ...prev.slice(0, 9)
+        ]);
       }
+
+      const isLongBreak = intervalCount >= (durations.cyclesBeforeLong || 4);
+      const nextMode = isLongBreak ? 'long' : 'short';
+      const nextDurationMins = isLongBreak ? (durations.long || 15) : (durations.short || 5);
+      const nextSecs = nextDurationMins * 60;
+      setMode(nextMode);
+      setTimeLeft(nextSecs);
+      setInitialDuration(nextSecs);
+      setIntervalCount(isLongBreak ? 1 : intervalCount + 1);
     } else {
       setMode('focus');
       const nextSecs = (durations.focus || 25) * 60;
@@ -464,10 +486,10 @@ export function PomodoroProvider({ children }) {
   const adjustTime = (deltaSeconds) => {
     const nextTime = Math.max(10, timeLeft + deltaSeconds);
     setTimeLeft(nextTime);
-    if (nextTime > initialDuration) {
+    if (!isRunning) {
       setInitialDuration(nextTime);
-    }
-    if (isRunning) {
+    } else {
+      setInitialDuration(prev => Math.max(nextTime, prev + deltaSeconds));
       targetEndTimeRef.current = Date.now() + (nextTime * 1000);
     }
   };
@@ -485,15 +507,34 @@ export function PomodoroProvider({ children }) {
 
   const updateDurations = (newDurations) => {
     setDurations(newDurations);
+    const modeSecs = (newDurations[mode] || 25) * 60;
     if (!isRunning) {
-      const modeSecs = (newDurations[mode] || 25) * 60;
       setTimeLeft(modeSecs);
       setInitialDuration(modeSecs);
     } else if (targetEndTimeRef.current) {
-      // If running, recalculate targetEndTime based on current mode's new duration
-      const modeSecs = (newDurations[mode] || 25) * 60;
+      const diff = modeSecs - initialDuration;
+      const nextTime = Math.max(10, timeLeft + diff);
+      setTimeLeft(nextTime);
       setInitialDuration(modeSecs);
+      targetEndTimeRef.current = Date.now() + (nextTime * 1000);
     }
+  };
+
+  const resetStats = () => {
+    const fresh = {
+      todayMinutes: 0,
+      goalMinutes: 300,
+      streakDays: 1,
+      completedSessions: 0,
+      subjectMinutes: {}
+    };
+    setStats(fresh);
+    setHistory([]);
+  };
+
+  const resetToDemoStats = () => {
+    setStats(DEFAULT_STATS);
+    setHistory(DEFAULT_HISTORY);
   };
 
   return (
@@ -527,7 +568,9 @@ export function PomodoroProvider({ children }) {
       stats,
       setStats,
       history,
-      setHistory
+      setHistory,
+      resetStats,
+      resetToDemoStats
     }}>
       {children}
     </PomodoroContext.Provider>

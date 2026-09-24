@@ -384,6 +384,7 @@ export default function PomodoroTimer() {
                       max="180"
                       value={editMinutes}
                       onChange={(e) => setEditMinutes(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEditTime(); }}
                       className="w-16 text-center bg-[rgb(var(--color-card))] rounded-lg border border-[rgb(var(--color-border))] p-1 focus:outline-none focus:border-[rgb(var(--color-primary))]"
                       autoFocus
                     />
@@ -394,6 +395,7 @@ export default function PomodoroTimer() {
                       max="59"
                       value={editSeconds}
                       onChange={(e) => setEditSeconds(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEditTime(); }}
                       className="w-16 text-center bg-[rgb(var(--color-card))] rounded-lg border border-[rgb(var(--color-border))] p-1 focus:outline-none focus:border-[rgb(var(--color-primary))]"
                     />
                   </div>
@@ -445,7 +447,7 @@ export default function PomodoroTimer() {
           </div>
 
           {/* QUICK EDIT STEP CONTROLS: -5m, -1m, +1m, +5m */}
-          {!isRunning && !isEditingTime && (
+          {!isEditingTime && (
             <div className="flex items-center gap-2 mt-3 text-xs font-mono text-[rgb(var(--color-muted))]">
               <span className="text-[10px] uppercase font-bold tracking-wider mr-1">Quick Adjust:</span>
               <button

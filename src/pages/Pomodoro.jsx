@@ -3,11 +3,11 @@ import PomodoroTimer from '../features/pomodoro/PomodoroTimer';
 import { usePomodoro } from '../context/PomodoroContext';
 import { 
   Flame, CheckCircle2, Clock, Plus, Trash2, 
-  Target, BarChart2
+  Target, BarChart2, RotateCcw, Sparkles
 } from 'lucide-react';
 
 export default function Pomodoro() {
-  const { stats, history } = usePomodoro();
+  const { stats, history, subjects, resetStats, resetToDemoStats } = usePomodoro();
 
   // Session Tasks / Goals Checklist with LocalStorage
   const [tasks, setTasks] = useState(() => {
@@ -55,7 +55,9 @@ export default function Pomodoro() {
 
   const todayHours = Math.floor(stats.todayMinutes / 60);
   const todayRemainingMins = stats.todayMinutes % 60;
-  const goalProgress = Math.min(100, Math.round((stats.todayMinutes / stats.goalMinutes) * 100));
+  const goalProgress = Math.min(100, Math.round((stats.todayMinutes / (stats.goalMinutes || 300)) * 100));
+  const goalHours = Math.floor((stats.goalMinutes || 300) / 60);
+  const goalRemMins = (stats.goalMinutes || 300) % 60;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8 animate-fade-in-up">
@@ -63,9 +65,29 @@ export default function Pomodoro() {
       {/* Top Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
-            Pomodoro Focus Studio
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
+              Pomodoro Focus Studio
+            </h1>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={resetStats}
+                className="px-2.5 py-1 rounded-lg border border-[rgb(var(--color-border))] bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[11px] font-mono text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                title="Reset today's focus stats to 0m for live demo testing"
+              >
+                <RotateCcw size={12} />
+                <span>Reset Day</span>
+              </button>
+              <button
+                onClick={resetToDemoStats}
+                className="px-2.5 py-1 rounded-lg border border-[rgb(var(--color-border))] bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[11px] font-mono text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                title="Restore default sample demo statistics"
+              >
+                <Sparkles size={12} />
+                <span>Demo Data</span>
+              </button>
+            </div>
+          </div>
           <p className="text-xs sm:text-sm text-[rgb(var(--color-muted))] mt-1">
             Editable intervals, custom subject tracking, and distraction-free study cycles.
           </p>
@@ -86,7 +108,7 @@ export default function Pomodoro() {
             <span className="text-[9px] uppercase tracking-wider text-[rgb(var(--color-muted))]">DAILY GOAL</span>
             <div className="flex items-baseline gap-1 mt-0.5">
               <span className="font-bold text-sm text-[rgb(var(--color-primary))]">{goalProgress}%</span>
-              <span className="text-[10px] text-[rgb(var(--color-muted))]">/ 5h</span>
+              <span className="text-[10px] text-[rgb(var(--color-muted))]">/ {goalHours}h</span>
             </div>
           </div>
 
@@ -123,7 +145,7 @@ export default function Pomodoro() {
                 <span className="font-bold text-[rgb(var(--color-text))]">Daily Focus Goal Progress</span>
               </div>
               <span className="text-[rgb(var(--color-muted))]">
-                {todayHours}h {todayRemainingMins}m / 5h 00m ({goalProgress}%)
+                {todayHours}h {todayRemainingMins}m / {goalHours}h {goalRemMins ? `${goalRemMins}m` : '00m'} ({goalProgress}%)
               </span>
             </div>
             <div className="w-full h-2.5 bg-[rgb(var(--color-container-high))] rounded-full overflow-hidden">
@@ -218,7 +240,7 @@ export default function Pomodoro() {
             </div>
           </div>
 
-          {/* 2. Subject Breakdown */}
+          {/* 2. Subject Breakdown with dynamic subject colors */}
           <div className="p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -231,37 +253,54 @@ export default function Pomodoro() {
             </div>
 
             <div className="space-y-3 text-xs">
-              {Object.entries(stats.subjectMinutes || {}).map(([subj, mins]) => {
-                const percent = Math.round((mins / (stats.todayMinutes || 1)) * 100);
-                return (
-                  <div key={subj} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-[rgb(var(--color-text))] truncate max-w-[180px]">{subj}</span>
-                      <span className="font-mono text-[rgb(var(--color-muted))]">{mins}m ({percent}%)</span>
+              {Object.keys(stats.subjectMinutes || {}).length === 0 ? (
+                <div className="text-center py-4 text-xs font-mono text-[rgb(var(--color-muted))]">
+                  No focus time recorded yet today. Complete an interval to track subject distribution!
+                </div>
+              ) : (
+                Object.entries(stats.subjectMinutes || {}).map(([subj, mins]) => {
+                  const percent = Math.round((mins / (stats.todayMinutes || 1)) * 100);
+                  const matchedSubject = subjects?.find(s => s.name === subj);
+                  const barColor = matchedSubject?.color || '#9e3c26';
+                  return (
+                    <div key={subj} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 truncate max-w-[180px]">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
+                          <span className="font-medium text-[rgb(var(--color-text))] truncate">{subj}</span>
+                        </div>
+                        <span className="font-mono text-[rgb(var(--color-muted))]">{mins}m ({percent}%)</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-[rgb(var(--color-container-high))] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all duration-500 ease-out"
+                          style={{ width: `${percent}%`, backgroundColor: barColor }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full h-1.5 bg-[rgb(var(--color-container-high))] rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-[rgb(var(--color-primary))] rounded-full"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
           {/* 3. Completed Sessions Log */}
-          {history.length > 0 && (
-            <div className="p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-xs space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 font-bold text-[rgb(var(--color-text))]">
-                  <Clock size={15} className="text-[rgb(var(--color-muted))]" />
-                  <span>Recent Intervals</span>
-                </div>
-                <span className="text-[10px] font-mono text-[rgb(var(--color-muted))]">Last {history.length}</span>
+          <div className="p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-xs space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 font-bold text-[rgb(var(--color-text))]">
+                <Clock size={15} className="text-[rgb(var(--color-muted))]" />
+                <span>Recent Intervals</span>
               </div>
+              <span className="text-[10px] font-mono text-[rgb(var(--color-muted))]">
+                {history.length > 0 ? `Last ${history.length}` : 'Empty'}
+              </span>
+            </div>
 
+            {history.length === 0 ? (
+              <div className="text-center py-3 text-xs font-mono text-[rgb(var(--color-muted))]">
+                No intervals recorded today yet.
+              </div>
+            ) : (
               <div className="space-y-2 text-xs">
                 {history.slice(0, 5).map((entry) => (
                   <div 
@@ -280,8 +319,8 @@ export default function Pomodoro() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
         </div>
 

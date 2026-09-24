@@ -15,7 +15,7 @@ export default function Navbar() {
 
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
-  const formattedTime = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')};`;
+  const formattedTime = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
   const navLinks = [
     { name: 'Pomodoro', path: '/pomodoro' },
@@ -68,7 +68,7 @@ export default function Navbar() {
           <Link
             to="/pomodoro"
             className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] text-xs font-mono text-[rgb(var(--color-text))] shadow-xs hover:border-[rgb(var(--color-primary))]/50 transition-colors"
-            title={`${currentSubject?.name || 'Focus'} • ${formattedTime.replace(';', '')} (${isRunning ? 'Running' : 'Paused'})`}
+            title={`${currentSubject?.name || 'Focus'} • ${formattedTime} (${isRunning ? 'Running' : 'Paused'})`}
           >
             <span 
               className={`w-2 h-2 rounded-full shrink-0 ${isRunning ? 'animate-pulse' : ''}`}
@@ -76,7 +76,7 @@ export default function Navbar() {
             />
             <span className="font-semibold truncate max-w-[110px]">{currentSubject?.name || 'Focus'}</span>
             <span className="text-[rgb(var(--color-muted))]">•</span>
-            <span className="text-[rgb(var(--color-primary))] font-medium">{formattedTime.replace(';', '')}</span>
+            <span className="text-[rgb(var(--color-primary))] font-medium">{formattedTime}</span>
             <span className="text-[10px] text-[rgb(var(--color-muted))]">{isRunning ? '▶' : '⏸'}</span>
           </Link>
 

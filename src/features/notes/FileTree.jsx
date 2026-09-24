@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Folder, FolderOpen, FileText, Image as ImageIcon, FileCode, 
-  ChevronRight, ChevronDown, Plus, Clock, Search, FilePlus
+  ChevronRight, ChevronDown, Plus, Clock, Search, FilePlus, Trash2
 } from 'lucide-react';
 
 export default function FileTree({ 
@@ -13,7 +13,10 @@ export default function FileTree({
   onSelectFolder,
   onOpenReminderModal,
   onAddFolder,
-  onNewNote
+  onNewNote,
+  onDeleteFile,
+  onDeleteFolder,
+  onAddSubject
 }) {
   const [expandedSubjects, setExpandedSubjects] = useState(() => {
     const init = {};
@@ -22,6 +25,7 @@ export default function FileTree({
     });
     return init;
   });
+
   const [expandedFolders, setExpandedFolders] = useState(() => {
     const init = {};
     subjects.forEach(s => {
@@ -31,22 +35,25 @@ export default function FileTree({
     });
     return init;
   });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All Files');
+  const prevActiveRef = useRef({ subject: activeSubject, folder: activeFolder });
 
-  // Auto-expand subject and folder when activeSubject or activeFolder change
+  // Auto-expand subject and folder ONLY when activeSubject or activeFolder actually change
   useEffect(() => {
     if (activeSubject) {
       const subj = subjects.find(s => s.name === activeSubject);
       if (subj) {
         setExpandedSubjects(prev => ({ ...prev, [subj.id]: true }));
-        if (activeFolder) {
+        if (activeFolder && (prevActiveRef.current.folder !== activeFolder || prevActiveRef.current.subject !== activeSubject)) {
           const folder = subj.folders.find(f => f.name === activeFolder);
           if (folder) {
             setExpandedFolders(prev => ({ ...prev, [folder.id]: true }));
           }
         }
       }
+      prevActiveRef.current = { subject: activeSubject, folder: activeFolder };
     }
   }, [activeSubject, activeFolder, subjects]);
 
@@ -60,8 +67,14 @@ export default function FileTree({
 
   // Filter subjects, folders, and files dynamically
   const q = searchQuery.toLowerCase().trim();
+  const isFiltering = Boolean(q || activeFilter !== 'All Files');
+
   const filteredSubjects = subjects.map(subject => {
+    const subjectNameMatches = q ? subject.name.toLowerCase().includes(q) : false;
+
     const updatedFolders = subject.folders.map(folder => {
+      const folderNameMatches = q ? folder.name.toLowerCase().includes(q) : false;
+
       const matchingFiles = folder.files.filter(file => {
         // Tag filter
         if (activeFilter === '#PDFs' && file.type !== 'pdf') return false;
@@ -69,27 +82,35 @@ export default function FileTree({
         if (activeFilter === '#Decay-Critical' && file.reminder?.status !== 'decaying') return false;
         if (activeFilter === '#Exams-W08' && !file.tags?.some(t => t.toLowerCase().includes('exam') || t.toLowerCase().includes('high'))) return false;
 
-        // Text query
+        // If subject or folder name matches and filter is 'All Files', keep file
         if (!q) return true;
+        if (subjectNameMatches || folderNameMatches) return true;
+
+        // Text query
         const matchName = file.name.toLowerCase().includes(q);
         const matchContent = typeof file.content === 'string' && file.content.toLowerCase().includes(q);
         const matchTags = file.tags && file.tags.some(t => t.toLowerCase().includes(q));
         return matchName || matchContent || matchTags;
       });
-      return { ...folder, files: matchingFiles };
+
+      return { 
+        ...folder, 
+        files: matchingFiles,
+        hasMatches: matchingFiles.length > 0 || folderNameMatches || subjectNameMatches
+      };
     }).filter(folder => {
-      if (!q && activeFilter === 'All Files') return true;
-      return folder.files.length > 0 || folder.name.toLowerCase().includes(q);
+      if (!isFiltering) return true;
+      return folder.hasMatches;
     });
 
     return {
       ...subject,
       folders: updatedFolders,
-      hasMatches: updatedFolders.length > 0
+      hasMatches: updatedFolders.length > 0 || subjectNameMatches
     };
   }).filter(subject => {
-    if (!q && activeFilter === 'All Files') return true;
-    return subject.hasMatches || subject.name.toLowerCase().includes(q);
+    if (!isFiltering) return true;
+    return subject.hasMatches;
   });
 
   const getFileIcon = (type) => {
@@ -120,9 +141,21 @@ export default function FileTree({
             Root Directory: Disciplines
           </span>
         </div>
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-muted))] border border-[rgb(var(--color-border))]">
-          {subjects.length} Disciplines
-        </span>
+        <div className="flex items-center gap-1.5">
+          {onAddSubject && (
+            <button
+              onClick={() => onAddSubject()}
+              className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[#9e3c26]/10 hover:bg-[#9e3c26]/20 text-[#9e3c26] dark:text-[#ffb4a3] border border-[#9e3c26]/30 font-semibold flex items-center gap-0.5 cursor-pointer transition-colors"
+              title="Add a new discipline / subject"
+            >
+              <Plus size={10} />
+              <span>Subject</span>
+            </button>
+          )}
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-muted))] border border-[rgb(var(--color-border))]">
+            {subjects.length} Disciplines
+          </span>
+        </div>
       </div>
 
       {/* Search & Tag Pills */}
@@ -181,7 +214,7 @@ export default function FileTree({
           </div>
         ) : (
           filteredSubjects.map(subject => {
-            const isSubjOpen = q || activeFilter !== 'All Files' ? true : expandedSubjects[subject.id];
+            const isSubjOpen = isFiltering ? true : expandedSubjects[subject.id];
             return (
             <div key={subject.id} className="rounded-xl border border-[rgb(var(--color-border))] overflow-hidden bg-[rgb(var(--color-container-low))]">
               
@@ -189,10 +222,10 @@ export default function FileTree({
               <div className="flex items-center justify-between p-2.5 hover:bg-[rgb(var(--color-container))] transition-colors">
                 <button
                   onClick={() => toggleSubject(subject.id)}
-                  className="flex items-center gap-2 flex-1 text-left cursor-pointer"
+                  className="flex items-center gap-2 flex-1 text-left cursor-pointer min-w-0"
                 >
-                  {isSubjOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: subject.color }} />
+                  {isSubjOpen ? <ChevronDown size={14} className="shrink-0" /> : <ChevronRight size={14} className="shrink-0" />}
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: subject.color || '#9e3c26' }} />
                   <span className="font-semibold text-[rgb(var(--color-text))] truncate">
                     {subject.name}
                   </span>
@@ -201,7 +234,7 @@ export default function FileTree({
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => onAddFolder && onAddFolder(subject.id)}
-                    className="px-1.5 py-0.5 rounded text-[10px] font-mono text-[#9e3c26] dark:text-[#ffb4a3] hover:bg-[#9e3c26]/10 transition-colors flex items-center gap-0.5"
+                    className="px-1.5 py-0.5 rounded text-[10px] font-mono text-[#9e3c26] dark:text-[#ffb4a3] hover:bg-[#9e3c26]/10 transition-colors flex items-center gap-0.5 cursor-pointer"
                     title={`Add folder to ${subject.name}`}
                   >
                     <Plus size={11} />
@@ -214,7 +247,7 @@ export default function FileTree({
                   
                   <button
                     onClick={() => onOpenReminderModal && onOpenReminderModal({ id: subject.id, name: subject.name, subject: subject.name })}
-                    className="p-1 text-[rgb(var(--color-muted))] hover:text-[#9e3c26] rounded-md transition-colors"
+                    className="p-1 text-[rgb(var(--color-muted))] hover:text-[#9e3c26] rounded-md transition-colors cursor-pointer"
                     title="Set Spaced Revision for this Subject"
                   >
                     <Clock size={12} />
@@ -226,7 +259,7 @@ export default function FileTree({
               {isSubjOpen && (
                 <div className="pl-4 pr-2 pb-2 space-y-1.5 border-t border-[rgb(var(--color-border))] bg-[rgb(var(--color-card))]">
                   {subject.folders.map(folder => {
-                    const isFolderOpen = expandedFolders[folder.id];
+                    const isFolderOpen = isFiltering ? true : expandedFolders[folder.id];
                     const isFolderActive = activeFolder === folder.name && activeSubject === subject.name;
                     return (
                       <div key={folder.id} className="pt-1.5">
@@ -237,14 +270,14 @@ export default function FileTree({
                             toggleFolder(folder.id);
                             onSelectFolder && onSelectFolder(subject.name, folder.name);
                           }}
-                          className={`flex items-center justify-between py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
+                          className={`flex items-center justify-between py-1 px-1.5 rounded-lg transition-colors cursor-pointer group ${
                             isFolderActive
                               ? 'bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] font-semibold'
                               : 'hover:bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-text))]'
                           }`}
                         >
                           <div className="flex items-center gap-1.5 text-left flex-1 min-w-0">
-                            {isFolderOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                            {isFolderOpen ? <ChevronDown size={12} className="shrink-0" /> : <ChevronRight size={12} className="shrink-0" />}
                             {isFolderOpen ? <FolderOpen size={13} className="text-[#9e3c26] dark:text-[#ffb4a3] shrink-0" /> : <Folder size={13} className="text-[#9e3c26] dark:text-[#ffb4a3] shrink-0" />}
                             <span className="truncate">
                               {folder.name}
@@ -259,18 +292,27 @@ export default function FileTree({
                             )}
                             <button
                               onClick={() => onNewNote && onNewNote({ subjectId: subject.id, subjectName: subject.name, folderName: folder.name })}
-                              className="p-1 text-[rgb(var(--color-muted))] hover:text-[#9e3c26] transition-colors rounded"
+                              className="p-1 text-[rgb(var(--color-muted))] hover:text-[#9e3c26] transition-colors rounded cursor-pointer"
                               title={`Create Document in ${folder.name}`}
                             >
                               <Plus size={12} />
                             </button>
                             <button
                               onClick={() => onOpenReminderModal && onOpenReminderModal({ id: folder.id, name: folder.name, subject: subject.name })}
-                              className="p-1 text-[rgb(var(--color-muted))] hover:text-[#9e3c26] transition-colors rounded"
+                              className="p-1 text-[rgb(var(--color-muted))] hover:text-[#9e3c26] transition-colors rounded cursor-pointer"
                               title="Set Spaced Revision for Folder"
                             >
                               <Clock size={11} />
                             </button>
+                            {onDeleteFolder && (
+                              <button
+                                onClick={() => onDeleteFolder(subject.name, folder.name)}
+                                className="p-1 text-[rgb(var(--color-muted))] hover:text-red-500 opacity-60 hover:opacity-100 transition-all rounded cursor-pointer"
+                                title={`Delete Folder "${folder.name}"`}
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -282,7 +324,7 @@ export default function FileTree({
                                 <span>Empty folder</span>
                                 <button
                                   onClick={() => onNewNote && onNewNote({ subjectId: subject.id, subjectName: subject.name, folderName: folder.name })}
-                                  className="text-[#9e3c26] dark:text-[#ffb4a3] hover:underline font-medium flex items-center gap-0.5"
+                                  className="text-[#9e3c26] dark:text-[#ffb4a3] hover:underline font-medium flex items-center gap-0.5 cursor-pointer"
                                 >
                                   <Plus size={11} />
                                   <span>Add note</span>
@@ -295,7 +337,7 @@ export default function FileTree({
                                   <div
                                     key={file.id}
                                     onClick={() => onSelectFile && onSelectFile(file, subject.name, folder.name)}
-                                    className={`p-2 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer ${
+                                    className={`p-2 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer group ${
                                       isSelected
                                         ? 'border-[#9e3c26] dark:border-[#e26f54] bg-[#9e3c26]/10 dark:bg-[#e26f54]/15 text-[rgb(var(--color-text))]'
                                         : 'border-transparent hover:bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))]'
@@ -315,7 +357,7 @@ export default function FileTree({
                                       </div>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 shrink-0">
+                                    <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
                                       {file.reminder && (
                                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-medium ${
                                           file.reminder.status === 'decaying'
@@ -326,15 +368,21 @@ export default function FileTree({
                                         </span>
                                       )}
                                       <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          onOpenReminderModal && onOpenReminderModal({ id: file.id, name: file.name, subject: subject.name });
-                                        }}
-                                        className="p-1 hover:text-[#9e3c26] text-[rgb(var(--color-muted))]"
+                                        onClick={() => onOpenReminderModal && onOpenReminderModal({ id: file.id, name: file.name, subject: subject.name })}
+                                        className="p-1 hover:text-[#9e3c26] text-[rgb(var(--color-muted))] cursor-pointer transition-colors"
                                         title="Set Revision Reminder"
                                       >
                                         <Clock size={12} />
                                       </button>
+                                      {onDeleteFile && (
+                                        <button
+                                          onClick={() => onDeleteFile(subject.name, folder.name, file.id, file.name)}
+                                          className="p-1 hover:text-red-500 text-[rgb(var(--color-muted))] opacity-60 hover:opacity-100 transition-all cursor-pointer"
+                                          title={`Delete "${file.name}"`}
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 );

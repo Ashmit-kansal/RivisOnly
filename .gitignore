@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 
 # Presentation & synopsis assets
+ppt/
 *.pptx
 *.ppt
 ~$*.pptx
@@ -31,3 +32,4 @@ dist-ssr
 *PPT*.html
 public/kiet_logo.*
 public/logo_b64.*
+

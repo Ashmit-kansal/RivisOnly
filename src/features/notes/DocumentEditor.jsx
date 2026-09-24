@@ -68,9 +68,14 @@ export default function DocumentEditor({
       .join('');
   };
 
+  const autoSaveTimerRef = useRef(null);
+
   // Sync content when activeFile changes
   useEffect(() => {
     if (activeFile) {
+      // Clear any pending autosave from previous document
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
       setDocTitle(activeFile.name?.replace(/\.[^/.]+$/, '') || 'Document');
       if (editorRef.current) {
         editorRef.current.innerHTML = parseInitialContent(activeFile.content);
@@ -80,6 +85,13 @@ export default function DocumentEditor({
     }
   }, [activeFile?.id]);
 
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, []);
+
   const updateCounts = () => {
     if (!editorRef.current) return;
     const text = editorRef.current.innerText || '';
@@ -88,9 +100,20 @@ export default function DocumentEditor({
     setCharCount(text.length);
   };
 
+  const scheduleAutoSave = (newTitle = docTitle) => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (editorRef.current && onSave) {
+        onSave(editorRef.current.innerHTML, newTitle);
+        setIsSaved(true);
+      }
+    }, 2000);
+  };
+
   const handleInput = () => {
     setIsSaved(false);
     updateCounts();
+    scheduleAutoSave();
   };
 
   const executeCommand = (command, value = null) => {
@@ -100,6 +123,7 @@ export default function DocumentEditor({
     document.execCommand(command, false, value);
     setIsSaved(false);
     updateCounts();
+    scheduleAutoSave();
   };
 
   const handleBlockChange = (tag) => {
@@ -158,14 +182,27 @@ export default function DocumentEditor({
   };
 
   const handleSave = () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     if (editorRef.current) {
       const htmlContent = editorRef.current.innerHTML;
       if (onSave) {
-        onSave(htmlContent);
+        onSave(htmlContent, docTitle);
       }
       setIsSaved(true);
     }
   };
+
+  // Keyboard shortcut: Ctrl+S / Cmd+S to save note
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [docTitle, onSave]);
 
   const handleCopy = () => {
     if (editorRef.current) {
@@ -201,7 +238,12 @@ export default function DocumentEditor({
             <input
               type="text"
               value={docTitle}
-              onChange={(e) => { setDocTitle(e.target.value); setIsSaved(false); }}
+              onChange={(e) => { 
+                const val = e.target.value;
+                setDocTitle(val); 
+                setIsSaved(false); 
+                scheduleAutoSave(val);
+              }}
               placeholder="Untitled Document..."
               className="font-bold text-base sm:text-lg text-[rgb(var(--color-text))] bg-transparent border-b border-transparent hover:border-[rgb(var(--color-border))] focus:border-[#9e3c26] focus:outline-none transition-colors px-1 py-0.5 rounded max-w-md truncate"
             />
