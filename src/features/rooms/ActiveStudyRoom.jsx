@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import DuelModal from './DuelModal';
 import Modal from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
+import { useStudyRooms } from '../../context/StudyRoomsContext';
 import { 
   Users, Swords, LogOut, Clock, Send, Sparkles, 
   Flame, CheckCircle2, AlertTriangle, ShieldAlert, 
@@ -10,25 +11,48 @@ import {
 
 export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) {
   const { user } = useAuth();
-  const youName = user ? `${user.name} (You)` : 'Guest Scholar (You)';
+  const { 
+    activeRoomSession, 
+    activeTimeLeft, 
+    isSessionCompleted, 
+    leaveRoom, 
+    addMessageToActiveRoom 
+  } = useStudyRooms();
 
-  // Timer State (Drift-free timestamp calculation)
-  const totalSeconds = (committedMinutes || 25) * 60;
-  const [timeLeft, setTimeLeft] = useState(totalSeconds);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const youName = user ? `${user.name} (You)` : 'Guest Scholar (You)';
+  const activeRoom = activeRoomSession?.room || room;
+  const activeMinutes = activeRoomSession?.committedMinutes || committedMinutes || 25;
+  const totalSeconds = activeMinutes * 60;
+
+  // Accurately compute remaining time from targetEndTime to prevent any 0s flash
+  const computedRemaining = activeRoomSession?.targetEndTime
+    ? Math.max(0, Math.ceil((activeRoomSession.targetEndTime - Date.now()) / 1000))
+    : totalSeconds;
+  const timeLeft = activeTimeLeft > 0 ? activeTimeLeft : computedRemaining;
+
   const [showExitWarningModal, setShowExitWarningModal] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
+  useEffect(() => {
+    // Only trigger celebration when session is truly completed and targetEndTime has arrived
+    if (
+      isSessionCompleted ||
+      (activeRoomSession?.targetEndTime && Date.now() >= activeRoomSession.targetEndTime)
+    ) {
+      setShowCompletionModal(true);
+    }
+  }, [isSessionCompleted, activeRoomSession?.targetEndTime, activeTimeLeft]);
+
   // Peers & Duel State
   const [peers, setPeers] = useState(() => {
-    const existing = room.members || [];
+    const existing = activeRoom?.members || [];
     const you = {
       id: 'me',
       name: youName,
-      avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      avatar: user?.avatar || null,
       level: user?.level ?? 1,
       school: user?.title || 'Scholar',
-      studyTime: 45,
+      studyTime: activeMinutes,
       status: 'Focusing',
       isYou: true
     };
@@ -37,50 +61,11 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
 
   const [selectedDuelPeer, setSelectedDuelPeer] = useState(null);
   const [showDuelModal, setShowDuelModal] = useState(false);
-
-  // Group Chat State
-  const [messages, setMessages] = useState(() => {
-    const initial = room.messages || [];
-    return [
-      ...initial,
-      {
-        id: `sys-enter-${Date.now()}`,
-        sender: 'System',
-        text: `You entered the room and locked in for a ${committedMinutes}m focus sprint.`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isSystem: true
-      }
-    ];
-  });
   const [chatInput, setChatInput] = useState('');
   const chatBottomRef = useRef(null);
 
-  // DRIFT-FREE TIMESTAMP COUNTDOWN LOOP
-  const targetEndTimeRef = useRef(Date.now() + totalSeconds * 1000);
-
-  useEffect(() => {
-    let animationFrame = null;
-
-    const checkTimer = () => {
-      const remainingMs = targetEndTimeRef.current - Date.now();
-      const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
-
-      setTimeLeft(remainingSec);
-
-      if (remainingSec <= 0) {
-        setIsCompleted(true);
-        setShowCompletionModal(true);
-      } else {
-        animationFrame = requestAnimationFrame(checkTimer);
-      }
-    };
-
-    animationFrame = requestAnimationFrame(checkTimer);
-
-    return () => {
-      if (animationFrame) cancelAnimationFrame(animationFrame);
-    };
-  }, []);
+  // Group Chat State backed by context
+  const messages = activeRoomSession?.messages || activeRoom?.messages || [];
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -104,7 +89,7 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
       isYou: true
     };
 
-    setMessages(prev => [...prev, newMsg]);
+    addMessageToActiveRoom(newMsg);
     setChatInput('');
   };
 
@@ -118,7 +103,7 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
       isSystem: false,
       isYou: true
     };
-    setMessages(prev => [...prev, reactionMsg]);
+    addMessageToActiveRoom(reactionMsg);
   };
 
   // Handle Challenge to Duel
@@ -127,30 +112,29 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
     setShowDuelModal(true);
 
     // Announce in chat
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `duel-announce-${Date.now()}`,
-        sender: 'System',
-        text: `⚔️ You challenged ${peer.name} to a 1v1 Recall Duel!`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isSystem: true
-      }
-    ]);
+    addMessageToActiveRoom({
+      id: `duel-announce-${Date.now()}`,
+      sender: 'System',
+      text: `⚔️ You challenged ${peer.name} to a 1v1 Recall Duel!`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isSystem: true
+    });
   };
 
   // Exit Room Handler
   const handleExitClick = () => {
-    if (timeLeft > 0 && !isCompleted) {
+    if (timeLeft > 0 && !isSessionCompleted) {
       setShowExitWarningModal(true);
     } else {
-      onExitRoom();
+      leaveRoom();
+      if (onExitRoom) onExitRoom();
     }
   };
 
   const handleConfirmExitAnyway = () => {
     setShowExitWarningModal(false);
-    onExitRoom();
+    leaveRoom();
+    if (onExitRoom) onExitRoom();
   };
 
   // Time calculations
@@ -167,15 +151,6 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
         
         {/* Room Info */}
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-[rgb(var(--color-primary))]">
-              ACTIVE STUDY HALL // {room.subject}
-            </span>
-            <span className="text-xs text-[rgb(var(--color-muted))]">•</span>
-            <span className="text-[10px] font-mono text-[rgb(var(--color-muted))]">{peers.length} Co-Workers</span>
-          </div>
-
           <h1 className="text-xl sm:text-2xl font-extrabold text-[rgb(var(--color-text))] tracking-tight">
             {room.name}
           </h1>
@@ -256,11 +231,17 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
               >
                 <div className="flex items-start gap-3">
                   <div className="relative shrink-0">
-                    <img
-                      src={peer.avatar}
-                      alt={peer.name}
-                      className="w-11 h-11 rounded-2xl object-cover border border-[rgb(var(--color-border))]"
-                    />
+                    {peer.avatar ? (
+                      <img
+                        src={peer.avatar}
+                        alt={peer.name}
+                        className="w-11 h-11 rounded-2xl object-cover border border-[rgb(var(--color-border))]"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[rgb(var(--color-primary))] to-orange-500 text-white font-bold text-sm flex items-center justify-center uppercase shadow-xs">
+                        {peer.name ? peer.name.charAt(0) : 'S'}
+                      </div>
+                    )}
                     <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[rgb(var(--color-card))] bg-emerald-500" />
                   </div>
 
@@ -463,7 +444,11 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
       {showCompletionModal && (
         <Modal
           isOpen={showCompletionModal}
-          onClose={() => setShowCompletionModal(false)}
+          onClose={() => {
+            setShowCompletionModal(false);
+            leaveRoom();
+            if (onExitRoom) onExitRoom();
+          }}
           maxWidth="max-w-md"
         >
           <div className="text-center space-y-4 py-3">
@@ -476,14 +461,14 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
                 Focus Commitment Complete!
               </h3>
               <p className="text-xs text-[rgb(var(--color-muted))] leading-relaxed">
-                You successfully honored your <strong className="text-[rgb(var(--color-text))]">{committedMinutes}-minute</strong> focus lock in {room.name}!
+                You successfully honored your <strong className="text-[rgb(var(--color-text))]">{activeMinutes}-minute</strong> focus lock in {activeRoom.name}!
               </p>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] flex items-center justify-around text-xs font-mono">
               <div>
                 <div className="text-[10px] text-[rgb(var(--color-muted))] uppercase">TIME LOGGED</div>
-                <div className="font-bold text-sm text-[rgb(var(--color-primary))]">{committedMinutes}m</div>
+                <div className="font-bold text-sm text-[rgb(var(--color-primary))]">{activeMinutes}m</div>
               </div>
               <div className="w-px h-8 bg-[rgb(var(--color-border))]" />
               <div>
@@ -495,7 +480,11 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
             <div className="flex items-center gap-2 pt-2">
               <button
                 type="button"
-                onClick={onExitRoom}
+                onClick={() => {
+                  setShowCompletionModal(false);
+                  leaveRoom();
+                  if (onExitRoom) onExitRoom();
+                }}
                 className="w-full py-3 rounded-xl bg-[rgb(var(--color-primary))] text-white font-semibold text-xs hover:brightness-105 transition-all shadow-md cursor-pointer"
               >
                 Complete Session & Return to Lobby

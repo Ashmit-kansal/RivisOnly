@@ -5,19 +5,24 @@ import ActiveStudyRoom from '../features/rooms/ActiveStudyRoom';
 import DuelModal from '../features/rooms/DuelModal';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
-import { mockRooms } from '../data/mockRooms';
+import { useStudyRooms } from '../context/StudyRoomsContext';
 import { Users, Plus, Search, Swords, Lock } from 'lucide-react';
 
 export default function StudyRooms() {
   const { user } = useAuth();
-  const [rooms, setRooms] = useState(mockRooms);
+  const { 
+    rooms, 
+    activeRoomSession, 
+    joinRoom, 
+    leaveRoom, 
+    createRoom 
+  } = useStudyRooms();
+
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Page View States: 'lobby' | 'commit' | 'active'
-  const [viewState, setViewState] = useState('lobby');
+  // Local state for commitment modal view
   const [selectedRoomForCommit, setSelectedRoomForCommit] = useState(null);
-  const [activeRoomData, setActiveRoomData] = useState(null); // { room, committedMinutes }
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showGlobalDuelModal, setShowGlobalDuelModal] = useState(false);
@@ -42,25 +47,21 @@ export default function StudyRooms() {
   // Handler when user clicks "Join" on a room card
   const handleInitiateJoin = (room) => {
     setSelectedRoomForCommit(room);
-    setViewState('commit');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handler when user confirms their time commitment
   const handleCommitAndEnter = (committedMinutes) => {
-    setActiveRoomData({
-      room: selectedRoomForCommit,
-      committedMinutes
-    });
-    setViewState('active');
+    if (!selectedRoomForCommit) return;
+    joinRoom(selectedRoomForCommit, committedMinutes, user);
+    setSelectedRoomForCommit(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handler when user leaves/exits active room
   const handleExitActiveRoom = () => {
-    setActiveRoomData(null);
+    leaveRoom();
     setSelectedRoomForCommit(null);
-    setViewState('lobby');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -80,7 +81,7 @@ export default function StudyRooms() {
         {
           id: 'me',
           name: user ? `${user.name} (You)` : 'Guest Scholar (You)',
-          avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          avatar: user?.avatar || null,
           level: user?.level ?? 1,
           school: user?.title || 'Scholar',
           studyTime: 45,
@@ -93,51 +94,38 @@ export default function StudyRooms() {
       ]
     };
 
-    setRooms(prev => [newRoom, ...prev]);
+    createRoom(newRoom);
     setShowCreateModal(false);
     setNewRoomName('');
     setNewRoomPasscode('');
 
     // Launch directly into commitment view for newly created room
     setSelectedRoomForCommit(newRoom);
-    setViewState('commit');
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8 animate-fade-in-up">
       
-      {/* 1. TIME COMMITMENT VIEW (FULL-SCREEN UNDER STUDY ROOMS PAGE) */}
-      {viewState === 'commit' && selectedRoomForCommit && (
+      {/* 1. ACTIVE STUDY ROOM VIEW (PERSISTENT ACROSS PAGE NAVIGATIONS) */}
+      {activeRoomSession ? (
+        <ActiveStudyRoom
+          room={activeRoomSession.room}
+          committedMinutes={activeRoomSession.committedMinutes}
+          onExitRoom={handleExitActiveRoom}
+        />
+      ) : selectedRoomForCommit ? (
+        /* 2. TIME COMMITMENT VIEW */
         <RoomCommitmentView
           room={selectedRoomForCommit}
           onCommit={handleCommitAndEnter}
-          onCancel={() => {
-            setSelectedRoomForCommit(null);
-            setViewState('lobby');
-          }}
+          onCancel={() => setSelectedRoomForCommit(null)}
         />
-      )}
-
-      {/* 2. ACTIVE STUDY ROOM VIEW (FULL-SCREEN UNDER STUDY ROOMS PAGE) */}
-      {viewState === 'active' && activeRoomData && (
-        <ActiveStudyRoom
-          room={activeRoomData.room}
-          committedMinutes={activeRoomData.committedMinutes}
-          onExitRoom={handleExitActiveRoom}
-        />
-      )}
-
-      {/* 3. STUDY ROOMS LOBBY VIEW (DEFAULT) */}
-      {viewState === 'lobby' && (
+      ) : (
+        /* 3. STUDY ROOMS LOBBY VIEW (DEFAULT) */
         <>
           {/* Top Banner */}
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
             <div>
-              <div className="text-[10px] font-mono tracking-widest uppercase text-[rgb(var(--color-muted))] flex items-center gap-1.5 mb-1 font-semibold">
-                <span>SYNCHRONOUS SPACES</span>
-                <span>//</span>
-                <span className="text-[rgb(var(--color-secondary))] font-bold">1,420 ONLINE SCHOLARS</span>
-              </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
                 Virtual Study Rooms & 1v1 Arena
               </h1>

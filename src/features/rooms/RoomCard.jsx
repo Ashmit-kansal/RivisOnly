@@ -66,12 +66,21 @@ export default function RoomCard({ room, onJoin }) {
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2 overflow-hidden">
                 {(room.members || []).slice(0, 4).map((m, i) => (
-                  <img
-                    key={m.id || i}
-                    src={m.avatar}
-                    alt={m.name}
-                    className="inline-block h-6 w-6 rounded-full ring-2 ring-[rgb(var(--color-card))] object-cover"
-                  />
+                  m.avatar ? (
+                    <img
+                      key={m.id || i}
+                      src={m.avatar}
+                      alt={m.name}
+                      className="inline-block h-6 w-6 rounded-full ring-2 ring-[rgb(var(--color-card))] object-cover"
+                    />
+                  ) : (
+                    <div
+                      key={m.id || i}
+                      className="inline-flex items-center justify-center h-6 w-6 rounded-full ring-2 ring-[rgb(var(--color-card))] bg-gradient-to-tr from-[rgb(var(--color-primary))] to-orange-500 text-white text-[10px] font-bold uppercase shadow-2xs"
+                    >
+                      {m.name ? m.name.charAt(0) : 'S'}
+                    </div>
+                  )
                 ))}
               </div>
               <span className="text-xs font-mono text-[rgb(var(--color-muted))]">
