@@ -3,30 +3,73 @@ import {
   StatsCards, VolumeAndCircadian, RetentionCurveSection, 
   ThirtyDayFocusBarChart, SynchronousArenaTable 
 } from '../features/analytics/AnalyticsComponents';
-import { Download, Sparkles, ChevronDown } from 'lucide-react';
+import { Download, Sparkles, ChevronDown, Check } from 'lucide-react';
+import { mockStats } from '../data/mockStats';
 
 export default function Analytics() {
   const [period, setPeriod] = useState('30D');
   const [activeSubjectFilter, setActiveSubjectFilter] = useState('All');
   const [alertDismissed, setAlertDismissed] = useState(false);
+  const [exported, setExported] = useState(false);
+
+  const handleExportReport = () => {
+    const reportText = `=====================================================
+RIVISONLY • STUDY ANALYTICS REPORT (${period})
+Generated: ${new Date().toLocaleDateString()}
+Selected Filter: ${activeSubjectFilter}
+=====================================================
+
+1. STUDY PERFORMANCE OVERVIEW:
+- Total Study Hours: ${mockStats.cumulativeFocus.hours} hrs (${mockStats.cumulativeFocus.delta})
+- Monthly Goal: ${mockStats.cumulativeFocus.goal} hrs (${mockStats.cumulativeFocus.progress}% completed)
+- Memory Retention Rate: ${mockStats.spacedMastery.rate}% (${mockStats.spacedMastery.delta})
+- Study Sessions Completed: ${mockStats.focusCadence.sessions} (Avg ${mockStats.focusCadence.dailyAvg} / day)
+- Deep Focus Quality: ${mockStats.focusCadence.focusQuality}%
+
+2. QUIZ DUEL STATS:
+- Global Duel Rating: ${mockStats.quizArena.rating} (${mockStats.quizArena.rankTier} Tier)
+- Record: ${mockStats.quizArena.wins} Wins / ${mockStats.quizArena.losses} Losses (${mockStats.quizArena.winRate}% Win Rate)
+- Current Streak: ${mockStats.quizArena.streak}
+- Average Answer Speed: ${mockStats.overallVelocity}
+
+3. SUBJECT TIME BREAKDOWN:
+${mockStats.subjectVolume.map(s => `- ${s.name}: ${s.hours} hrs / ${s.targetHours}h goal (${s.masteryRate}% mastery, Grade: ${s.grade})`).join('\n')}
+
+=====================================================
+Keep up the consistent reviews to maximize long-term retention!
+`;
+
+    const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `RivisOnly_Study_Report_${period}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setExported(true);
+    setTimeout(() => setExported(false), 3000);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8 animate-fade-in">
       
-      {/* Top Header matching template */}
+      {/* Top Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <div className="text-[10px] font-mono tracking-widest uppercase text-[rgb(var(--color-muted))] flex items-center gap-1.5 mb-1 font-semibold">
-            <span>DIAGNOSTIC TELEMETRY</span>
+            <span>STUDY ANALYTICS & INSIGHTS</span>
             <span>•</span>
-            <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-bold">Q1 ACTIVE PERIOD</span>
+            <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-bold">CURRENT SEMESTER</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
-            Performance & Cognitive Velocity
+            Study Performance & Learning Progress
           </h1>
           <div className="mt-1">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-text))]">
-              Cohort: Global Top 2%
+              Rank: Top 2% of Learners Globally
             </span>
           </div>
         </div>
@@ -66,37 +109,44 @@ export default function Analytics() {
             <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[rgb(var(--color-muted))]" />
           </div>
 
-          {/* Export Dossier button */}
+          {/* Export Report button */}
           <button
-            onClick={() => alert('Diagnostic Dossier exported successfully.')}
-            className="px-4 py-2 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-medium flex items-center gap-1.5 shadow-sm shadow-[#9e3c26]/20 transition-all cursor-pointer"
+            onClick={handleExportReport}
+            className={`px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 shadow-sm transition-all cursor-pointer ${
+              exported 
+                ? 'bg-emerald-600 text-white' 
+                : 'bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white shadow-[#9e3c26]/20'
+            }`}
           >
-            <Download size={13} />
-            <span>Export Dossier</span>
+            {exported ? <Check size={13} /> : <Download size={13} />}
+            <span>{exported ? 'Report Downloaded!' : 'Export Report'}</span>
           </button>
         </div>
       </div>
 
       {/* 4 Stat Cards */}
-      <StatsCards />
+      <StatsCards period={period} selectedSubject={activeSubjectFilter} />
 
-      {/* Distribution Geometry & Retention Curve Section */}
+      {/* Time Allocation & Retention Curve Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-6">
-          <VolumeAndCircadian />
+          <VolumeAndCircadian 
+            selectedSubject={activeSubjectFilter} 
+            onSelectSubject={setActiveSubjectFilter} 
+          />
         </div>
         <div className="lg:col-span-6">
-          <RetentionCurveSection />
+          <RetentionCurveSection selectedSubject={activeSubjectFilter} />
         </div>
       </div>
 
-      {/* 30-Day Focus Minutes & Active Continuity */}
-      <ThirtyDayFocusBarChart />
+      {/* Daily Focus Minutes & Consistency */}
+      <ThirtyDayFocusBarChart period={period} />
 
-      {/* Synchronous Arena (Recent Duels & Subject Accuracy) */}
-      <SynchronousArenaTable />
+      {/* Head-to-Head Duels & Subject Accuracy */}
+      <SynchronousArenaTable selectedSubject={activeSubjectFilter} />
 
-      {/* Bottom AI Diagnostic Alert Banner */}
+      {/* Bottom Personalized Study Tip Alert Banner */}
       {!alertDismissed && (
         <div className="p-4 rounded-2xl bg-gradient-to-r from-[#9e3c26]/10 via-[rgb(var(--color-container-low))] to-transparent border border-[#9e3c26]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -105,10 +155,10 @@ export default function Analytics() {
             </div>
             <div>
               <h3 className="font-bold text-sm text-[rgb(var(--color-text))]">
-                AI Retention Diagnostic Complete
+                Smart Study Recommendation
               </h3>
               <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
-                Recommended focus adjustment: Allocate +25 minutes to Linear Algebra (Orthogonal Projection) before Friday's review deadline.
+                Recommended focus adjustment: Allocate +25 minutes to Linear Algebra (Orthogonal Projections) before Friday's review deadline.
               </p>
             </div>
           </div>
@@ -121,7 +171,7 @@ export default function Analytics() {
               Dismiss
             </button>
             <button
-              onClick={() => alert('Queued 15-Card Review for Linear Algebra!')}
+              onClick={() => alert('Queued 15-Card Review for Linear Algebra in Revision Hub!')}
               className="px-4 py-1.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-medium text-xs shadow-xs transition-colors cursor-pointer"
             >
               Queue 15-Card Review

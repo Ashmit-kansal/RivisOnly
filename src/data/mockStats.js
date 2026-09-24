@@ -1,14 +1,14 @@
 export const mockStats = {
   cumulativeFocus: {
     hours: 184.5,
-    delta: '+14.2% vs prev month',
+    delta: '+14.2% vs last month',
     goal: 200,
     progress: 92.25
   },
   spacedMastery: {
     rate: 91.4,
-    delta: '+4.1%',
-    status: 'Optimal Consolidation'
+    delta: '+4.1% this month',
+    status: 'High Memory Retention'
   },
   quizArena: {
     rating: 1840,
@@ -21,8 +21,10 @@ export const mockStats = {
   },
   focusCadence: {
     cycles: 312,
+    sessions: 312,
     dailyAvg: 4.2,
-    flowDensity: 94.2
+    flowDensity: 94.2,
+    focusQuality: 94.2
   },
   subjectVolume: [
     { name: 'Organic Chemistry II', hours: 72.0, targetHours: 80, percentage: 39, color: '#c84b31', grade: 'A- Tier', topicsLearned: 14, masteryRate: 88 },
@@ -31,13 +33,13 @@ export const mockStats = {
     { name: 'Macroeconomics', hours: 20.5, targetHours: 25, percentage: 11, color: '#d4a017', grade: 'A Tier', topicsLearned: 6, masteryRate: 85 }
   ],
   retentionCurve: [
-    { day: 'Day 0', aiRetention: 100, unprompted: 100, stage: 'Initial Ingestion', tip: '100% freshly learned material' },
-    { day: 'Day 1', aiRetention: 95, unprompted: 68, stage: 'Next-Day Review', tip: 'Preserves 95% (prevents natural 32% overnight drop)' },
-    { day: 'Day 3', aiRetention: 93, unprompted: 45, stage: 'The 48h Cliff', tip: 'Active recall stops the steep 55% loss' },
-    { day: 'Day 7', aiRetention: 91, unprompted: 33, stage: '1-Week Anchor', tip: 'Consolidates formulas into mid-term memory' },
-    { day: 'Day 14', aiRetention: 90, unprompted: 24, stage: '2-Week Hardening', tip: 'Synaptic connections harden for timed exams' },
-    { day: 'Day 21', aiRetention: 92, unprompted: 18, stage: '3-Week Stability', tip: 'High retrieval speed (+74% over unreviewed)' },
-    { day: 'Day 30', aiRetention: 91, unprompted: 12, stage: 'Permanent Storage', tip: 'Permanent retention locked in for semester finals' }
+    { day: 'Day 0', aiRetention: 100, unprompted: 100, stage: 'First Learned', tip: '100% freshly learned material' },
+    { day: 'Day 1', aiRetention: 95, unprompted: 68, stage: '24-Hour Review', tip: 'Short review keeps retention at 95% (prevents overnight 32% loss)' },
+    { day: 'Day 3', aiRetention: 93, unprompted: 45, stage: 'Day 3 Checkpoint', tip: 'Active recall stops the steep 55% forgetting cliff' },
+    { day: 'Day 7', aiRetention: 91, unprompted: 33, stage: '1-Week Anchor', tip: 'Locks key concepts and formulas into mid-term memory' },
+    { day: 'Day 14', aiRetention: 90, unprompted: 24, stage: '2-Week Memory Lock', tip: 'Knowledge becomes fast and automatic for exams' },
+    { day: 'Day 21', aiRetention: 92, unprompted: 18, stage: '3-Week Milestone', tip: 'Effortless recall with minimal future review needed' },
+    { day: 'Day 30', aiRetention: 91, unprompted: 12, stage: 'Permanent Storage', tip: 'Permanent memory secured for finals with zero cramming' }
   ],
   upcomingSchedule: [
     { day: 'Mon', count: 34, isHeavy: true, subjects: '22 Org Chem, 12 Lin Alg', estMinutes: 18 },
@@ -48,31 +50,69 @@ export const mockStats = {
     { day: 'Sat', count: 14, isHeavy: false, subjects: '14 Lin Alg Review', estMinutes: 8 },
     { day: 'Sun', count: 16, isHeavy: false, subjects: '16 Weekly Recap Cards', estMinutes: 9 }
   ],
+  daySegments: [
+    {
+      id: 'morning',
+      name: 'Morning',
+      timeRange: '6 AM – 12 PM',
+      avgScore: 92,
+      tag: 'Peak Flow',
+      color: '#9e3c26',
+      bestFor: 'Complex mechanisms & math proofs'
+    },
+    {
+      id: 'afternoon',
+      name: 'Afternoon',
+      timeRange: '12 PM – 6 PM',
+      avgScore: 78,
+      tag: 'Steady Study',
+      color: '#d4a017',
+      bestFor: 'Problem sets, lab notes & exercises'
+    },
+    {
+      id: 'evening',
+      name: 'Evening',
+      timeRange: '6 PM – 11 PM',
+      avgScore: 94,
+      tag: 'Sprint Peak',
+      color: '#9e3c26',
+      bestFor: '1v1 quiz duels & speed flashcards'
+    },
+    {
+      id: 'night',
+      name: 'Night',
+      timeRange: '11 PM – 6 AM',
+      avgScore: 15,
+      tag: 'Rest & Sleep',
+      color: '#4f7cac',
+      bestFor: 'Sleep & memory consolidation'
+    }
+  ],
   circadianHeatmap: [
-    { hour: '00:00', level: 0, label: 'Rest / Sleep', focusScore: '0%' },
-    { hour: '01:00', level: 0, label: 'Rest / Sleep', focusScore: '0%' },
-    { hour: '02:00', level: 0, label: 'Rest / Sleep', focusScore: '0%' },
-    { hour: '03:00', level: 0, label: 'Rest / Sleep', focusScore: '0%' },
-    { hour: '04:00', level: 0, label: 'Rest / Sleep', focusScore: '0%' },
-    { hour: '05:00', level: 1, label: 'Waking / Dawn', focusScore: '40%' },
-    { hour: '06:00', level: 2, label: 'Early Reading', focusScore: '72%' },
-    { hour: '07:00', level: 2, label: 'Morning Prep', focusScore: '74%' },
-    { hour: '08:00', level: 3, label: 'Warm-Up Session', focusScore: '86%' },
-    { hour: '09:00', level: 4, label: 'Morning Deep Flow (Peak)', focusScore: '96%' },
-    { hour: '10:00', level: 4, label: 'Morning Deep Flow (Peak)', focusScore: '98%' },
-    { hour: '11:00', level: 4, label: 'Morning Deep Flow (Peak)', focusScore: '95%' },
-    { hour: '12:00', level: 2, label: 'Midday Recharge', focusScore: '68%' },
-    { hour: '13:00', level: 2, label: 'Lunch Break', focusScore: '65%' },
-    { hour: '14:00', level: 3, label: 'Afternoon Practice', focusScore: '82%' },
-    { hour: '15:00', level: 3, label: 'Afternoon Practice', focusScore: '85%' },
-    { hour: '16:00', level: 3, label: 'Lab & Formula Review', focusScore: '84%' },
-    { hour: '17:00', level: 3, label: 'Study Room Sprints', focusScore: '83%' },
-    { hour: '18:00', level: 3, label: 'Dinner / Break', focusScore: '70%' },
-    { hour: '19:00', level: 3, label: 'Evening Review', focusScore: '84%' },
-    { hour: '20:00', level: 4, label: 'Evening Deep Flow (Peak)', focusScore: '94%' },
-    { hour: '21:00', level: 4, label: 'Evening Deep Flow (Peak)', focusScore: '95%' },
-    { hour: '22:00', level: 4, label: 'Quiz Sprint Hour', focusScore: '92%' },
-    { hour: '23:00', level: 2, label: 'Wind-Down & Notes', focusScore: '68%' },
+    { hour: '00:00', hour12: '12 AM', score: 0, level: 0, period: 'night', label: 'Rest / Sleep', focusScore: '0%', recommendation: 'Sleep & neural memory consolidation' },
+    { hour: '01:00', hour12: '1 AM', score: 0, level: 0, period: 'night', label: 'Rest / Sleep', focusScore: '0%', recommendation: 'Sleep & neural memory consolidation' },
+    { hour: '02:00', hour12: '2 AM', score: 0, level: 0, period: 'night', label: 'Rest / Sleep', focusScore: '0%', recommendation: 'Sleep & neural memory consolidation' },
+    { hour: '03:00', hour12: '3 AM', score: 0, level: 0, period: 'night', label: 'Rest / Sleep', focusScore: '0%', recommendation: 'Sleep & neural memory consolidation' },
+    { hour: '04:00', hour12: '4 AM', score: 0, level: 0, period: 'night', label: 'Rest / Sleep', focusScore: '0%', recommendation: 'Sleep & neural memory consolidation' },
+    { hour: '05:00', hour12: '5 AM', score: 35, level: 1, period: 'night', label: 'Waking / Dawn', focusScore: '35%', recommendation: 'Gentle hydration & light review' },
+    { hour: '06:00', hour12: '6 AM', score: 72, level: 2, period: 'morning', label: 'Early Reading', focusScore: '72%', recommendation: 'Textbook skimming & formula review' },
+    { hour: '07:00', hour12: '7 AM', score: 75, level: 2, period: 'morning', label: 'Morning Warm-up', focusScore: '75%', recommendation: 'Flashcard speed run' },
+    { hour: '08:00', hour12: '8 AM', score: 86, level: 3, period: 'morning', label: 'Warm-Up Session', focusScore: '86%', recommendation: 'Quick recall quiz sprints' },
+    { hour: '09:00', hour12: '9 AM', score: 96, level: 4, period: 'morning', isPeak: true, label: 'Morning Deep Flow (Peak)', focusScore: '96%', recommendation: 'Hardest topics: Reaction Mechanisms & Proofs' },
+    { hour: '10:00', hour12: '10 AM', score: 98, level: 4, period: 'morning', isPeak: true, label: 'Morning Deep Flow (Peak)', focusScore: '98%', recommendation: 'Highest cognitive clarity of the day' },
+    { hour: '11:00', hour12: '11 AM', score: 95, level: 4, period: 'morning', isPeak: true, label: 'Morning Deep Flow (Peak)', focusScore: '95%', recommendation: 'High-yield problem solving & synthesis' },
+    { hour: '12:00', hour12: '12 PM', score: 68, level: 2, period: 'afternoon', label: 'Midday Recharge', focusScore: '68%', recommendation: 'Lunch break & passive review' },
+    { hour: '13:00', hour12: '1 PM', score: 65, level: 2, period: 'afternoon', label: 'Lunch Break', focusScore: '65%', recommendation: 'Rest to reset attention span' },
+    { hour: '14:00', hour12: '2 PM', score: 82, level: 3, period: 'afternoon', label: 'Afternoon Practice', focusScore: '82%', recommendation: 'Applied problem sets & worksheet practice' },
+    { hour: '15:00', hour12: '3 PM', score: 85, level: 3, period: 'afternoon', label: 'Afternoon Practice', focusScore: '85%', recommendation: 'Practice exams & active derivation' },
+    { hour: '16:00', hour12: '4 PM', score: 84, level: 3, period: 'afternoon', label: 'Formula & Practice Review', focusScore: '84%', recommendation: 'Study group discussion & formula sheets' },
+    { hour: '17:00', hour12: '5 PM', score: 83, level: 3, period: 'afternoon', label: 'Study Room Sprints', focusScore: '83%', recommendation: 'Lofi focus session in Virtual Room' },
+    { hour: '18:00', hour12: '6 PM', score: 70, level: 2, period: 'evening', label: 'Dinner / Break', focusScore: '70%', recommendation: 'Recharge & exercise' },
+    { hour: '19:00', hour12: '7 PM', score: 84, level: 3, period: 'evening', label: 'Evening Review', focusScore: '84%', recommendation: 'Summarizing key points & notes' },
+    { hour: '20:00', hour12: '8 PM', score: 94, level: 4, period: 'evening', isPeak: true, label: 'Evening Deep Flow (Peak)', focusScore: '94%', recommendation: '1v1 Live Quiz Duels & speed tests' },
+    { hour: '21:00', hour12: '9 PM', score: 95, level: 4, period: 'evening', isPeak: true, label: 'Evening Deep Flow (Peak)', focusScore: '95%', recommendation: 'High speed recall & competitive arena' },
+    { hour: '22:00', hour12: '10 PM', score: 92, level: 4, period: 'evening', isPeak: true, label: 'Quiz Sprint Hour', focusScore: '92%', recommendation: 'Final review of spaced repetition queue' },
+    { hour: '23:00', hour12: '11 PM', score: 68, level: 2, period: 'night', label: 'Wind-Down & Review', focusScore: '68%', recommendation: 'Light reading & prep for sleep' },
   ],
   thirtyDayMinutes: [
     { day: '1', minutes: 110, target: 180 }, { day: '2', minutes: 140, target: 180 }, { day: '3', minutes: 95, target: 180 },
@@ -92,7 +132,8 @@ export const mockStats = {
       opponent: 'Elena Rostova',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       school: 'Lv. 16 • Heidelberg',
-      subject: 'Org Chem: Stereochemistry',
+      subject: 'Organic Chemistry II',
+      topic: 'Stereochemistry',
       score: '10/10',
       timeTaken: '3m 42s',
       speedDelta: '+18s Faster',
@@ -104,7 +145,8 @@ export const mockStats = {
       opponent: 'Julian Chen',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
       school: 'Lv. 19 • MIT',
-      subject: 'Lin Alg: Eigenvectors',
+      subject: 'Linear Algebra',
+      topic: 'Eigenvectors',
       score: '9/10',
       timeTaken: '4m 05s',
       speedDelta: '+31s Faster',
@@ -116,7 +158,8 @@ export const mockStats = {
       opponent: 'Amara Nwosu',
       avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
       school: 'Lv. 21 • Cambridge',
-      subject: 'Cognitive Neuro: Synaptic Plasticity',
+      subject: 'Cognitive Neuroscience',
+      topic: 'Synaptic Plasticity',
       score: '8/10 vs 9/10',
       timeTaken: '3m 50s',
       speedDelta: '-1 Mistake',
@@ -128,7 +171,8 @@ export const mockStats = {
       opponent: 'Marcus Vance',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       school: 'Lv. 14 • Toronto',
-      subject: 'Macro: IS-LM Models',
+      subject: 'Macroeconomics',
+      topic: 'IS-LM Models',
       score: '10/10',
       timeTaken: '2m 54s',
       speedDelta: '+42s Faster',
@@ -137,10 +181,10 @@ export const mockStats = {
     }
   ],
   subjectAccuracy: [
-    { subject: 'Organic Chem II', accuracy: 96.4, latency: 'avg 2.8s/q', color: '#c84b31' },
-    { subject: 'Cognitive Neuroscience', accuracy: 92.8, latency: 'avg 3.1s/q', color: '#2d7d46' },
-    { subject: 'Linear Algebra', accuracy: 88.5, latency: 'avg 4.2s/q', color: '#4f7cac' },
-    { subject: 'Macroeconomics', accuracy: 84.0, latency: 'avg 3.6s/q', color: '#d4a017' }
+    { subject: 'Organic Chemistry II', accuracy: 96.4, latency: 'avg 2.8s / question', color: '#c84b31' },
+    { subject: 'Cognitive Neuroscience', accuracy: 92.8, latency: 'avg 3.1s / question', color: '#2d7d46' },
+    { subject: 'Linear Algebra', accuracy: 88.5, latency: 'avg 4.2s / question', color: '#4f7cac' },
+    { subject: 'Macroeconomics', accuracy: 84.0, latency: 'avg 3.6s / question', color: '#d4a017' }
   ],
-  overallVelocity: '3.24 sec / prompt'
+  overallVelocity: '3.2 sec / question'
 };

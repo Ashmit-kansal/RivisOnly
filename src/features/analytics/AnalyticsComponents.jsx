@@ -2,53 +2,67 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  Line, AreaChart, Area, CartesianGrid 
+  Line, Area, CartesianGrid, ComposedChart, ReferenceLine, Cell
 } from 'recharts';
 import ProgressBar from '../../components/ui/ProgressBar';
 import { mockStats } from '../../data/mockStats';
 import { 
   Hourglass, Brain, Swords, Clock, TrendingUp, Flame, 
   CheckCircle2, ChevronRight, Sparkles, BookOpen, ArrowRight,
-  Info, Zap, Calendar, ArrowUpRight
+  Info, Zap, Calendar, ArrowUpRight, Sun, Moon, Coffee, Star
 } from 'lucide-react';
 
-export function StatsCards() {
-  const { cumulativeFocus, spacedMastery, quizArena, focusCadence } = mockStats;
+export function StatsCards({ period = '30D', selectedSubject = 'All' }) {
+  const { cumulativeFocus, spacedMastery, quizArena, focusCadence, subjectVolume } = mockStats;
+
+  // Filter stats if a specific subject is selected
+  const activeSubjData = selectedSubject !== 'All' 
+    ? subjectVolume.find(s => s.name === selectedSubject) 
+    : null;
+
+  const displayHours = activeSubjData ? activeSubjData.hours : cumulativeFocus.hours;
+  const displayGoal = activeSubjData ? activeSubjData.targetHours : cumulativeFocus.goal;
+  const displayProgress = activeSubjData 
+    ? Math.min(100, Math.round((activeSubjData.hours / activeSubjData.targetHours) * 100))
+    : cumulativeFocus.progress;
+  const displayRetention = activeSubjData ? activeSubjData.masteryRate : spacedMastery.rate;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       
-      {/* Cumulative Focus */}
+      {/* Total Study Time */}
       <div className="p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none flex flex-col justify-between">
         <div className="flex items-center justify-between text-xs font-mono text-[rgb(var(--color-muted))]">
-          <span className="uppercase tracking-wider font-semibold">Cumulative Focus</span>
+          <span className="uppercase tracking-wider font-semibold">
+            {activeSubjData ? `${activeSubjData.name.split(' ')[0]} Time` : 'Total Study Time'}
+          </span>
           <Hourglass size={14} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
         </div>
         <div className="my-3">
           <div className="text-3xl font-bold tracking-tight font-mono text-[rgb(var(--color-text))]">
-            {cumulativeFocus.hours} <span className="text-lg font-normal text-[rgb(var(--color-muted))]">hrs</span>
+            {displayHours} <span className="text-lg font-normal text-[rgb(var(--color-muted))]">hrs</span>
           </div>
           <div className="text-xs text-[rgb(var(--color-secondary))] font-mono mt-1 flex items-center gap-1 font-medium">
             <TrendingUp size={12} />
-            <span>{cumulativeFocus.delta}</span>
+            <span>{activeSubjData ? `${displayProgress}% of target (${displayGoal}h)` : cumulativeFocus.delta}</span>
           </div>
         </div>
-        <ProgressBar value={cumulativeFocus.progress} height="h-1.5" color="bg-[#9e3c26] dark:bg-[#e26f54]" />
+        <ProgressBar value={displayProgress} height="h-1.5" color="bg-[#9e3c26] dark:bg-[#e26f54]" />
       </div>
 
-      {/* Spaced Mastery */}
+      {/* Memory Retention Rate */}
       <div className="p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none flex flex-col justify-between">
         <div className="flex items-center justify-between text-xs font-mono text-[rgb(var(--color-muted))]">
-          <span className="uppercase tracking-wider font-semibold">Spaced Mastery</span>
+          <span className="uppercase tracking-wider font-semibold">Memory Retention Rate</span>
           <Brain size={14} className="text-[rgb(var(--color-secondary))]" />
         </div>
         <div className="my-3">
           <div className="text-3xl font-bold tracking-tight font-mono text-[rgb(var(--color-secondary))]">
-            {spacedMastery.rate}%
+            {displayRetention}%
           </div>
           <div className="text-xs text-[rgb(var(--color-secondary))] font-mono mt-1 flex items-center gap-1 font-medium">
             <Sparkles size={12} />
-            <span>AI Retention Rate ({spacedMastery.delta})</span>
+            <span>Spaced Review Score ({spacedMastery.delta})</span>
           </div>
         </div>
         <div className="flex gap-1">
@@ -58,10 +72,10 @@ export function StatsCards() {
         </div>
       </div>
 
-      {/* 1v1 Quiz Arena */}
+      {/* 1v1 Quiz Duels */}
       <div className="p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none flex flex-col justify-between">
         <div className="flex items-center justify-between text-xs font-mono text-[rgb(var(--color-muted))]">
-          <span className="uppercase tracking-wider font-semibold">1v1 Quiz Arena</span>
+          <span className="uppercase tracking-wider font-semibold">1v1 Quiz Duels</span>
           <Swords size={14} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
         </div>
         <div className="my-3">
@@ -78,28 +92,28 @@ export function StatsCards() {
           </div>
         </div>
         <div className="flex items-center justify-between text-[11px] font-mono text-[rgb(var(--color-muted))]">
-          <span>Rank #{quizArena.globalRank} Global</span>
+          <span>Rank #{quizArena.globalRank} Globally</span>
           <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-bold">Streak: {quizArena.streak}</span>
         </div>
       </div>
 
-      {/* Focus Cadence */}
+      {/* Study Sessions */}
       <div className="p-5 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none flex flex-col justify-between">
         <div className="flex items-center justify-between text-xs font-mono text-[rgb(var(--color-muted))]">
-          <span className="uppercase tracking-wider font-semibold">Focus Cadence</span>
+          <span className="uppercase tracking-wider font-semibold">Study Sessions</span>
           <Clock size={14} className="text-sky-500" />
         </div>
         <div className="my-3">
           <div className="text-3xl font-bold tracking-tight font-mono text-[rgb(var(--color-text))]">
-            {focusCadence.cycles} <span className="text-lg font-normal text-[rgb(var(--color-muted))]">cycles</span>
+            {focusCadence.sessions} <span className="text-lg font-normal text-[rgb(var(--color-muted))]">sessions</span>
           </div>
           <div className="text-xs text-[rgb(var(--color-muted))] font-mono mt-1">
-            {focusCadence.dailyAvg} cycles / day daily avg
+            {focusCadence.dailyAvg} sessions / day average
           </div>
         </div>
         <div className="text-[11px] font-mono text-[rgb(var(--color-secondary))] flex items-center gap-1.5 font-medium">
           <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-secondary))] animate-pulse" />
-          <span>Optimal flow density ({focusCadence.flowDensity}%)</span>
+          <span>Deep focus score ({focusCadence.focusQuality}%)</span>
         </div>
       </div>
 
@@ -107,17 +121,22 @@ export function StatsCards() {
   );
 }
 
-export function VolumeAndCircadian() {
+export function VolumeAndCircadian({ selectedSubject = 'All', onSelectSubject }) {
   const { subjectVolume, circadianHeatmap } = mockStats;
-  const [selectedSubject, setSelectedSubject] = useState(null);
   const [hoveredHour, setHoveredHour] = useState(null);
 
   const totalHours = subjectVolume.reduce((acc, s) => acc + s.hours, 0);
 
+  const handleCardClick = (subjName) => {
+    if (onSelectSubject) {
+      onSelectSubject(selectedSubject === subjName ? 'All' : subjName);
+    }
+  };
+
   return (
     <div className="p-5 sm:p-6 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none space-y-6">
       
-      {/* 1. Header: Human-understandable */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[rgb(var(--color-border))]">
         <div>
           <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] font-semibold">
@@ -128,7 +147,7 @@ export function VolumeAndCircadian() {
             Study Time by Subject
           </h3>
           <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
-            How your study hours are split across courses this month.
+            How your study hours are split across courses this month. Click any card to filter.
           </p>
         </div>
 
@@ -143,17 +162,17 @@ export function VolumeAndCircadian() {
       {/* Proportional Subject Breakdown Progress Bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs font-mono text-[rgb(var(--color-muted))]">
-          <span>Distribution Bar:</span>
-          <span>Click any subject to inspect details</span>
+          <span>Subject Time Distribution:</span>
+          <span>{selectedSubject !== 'All' ? `Filtering: ${selectedSubject}` : 'Click any subject to filter'}</span>
         </div>
 
         <div className="w-full h-4 rounded-xl overflow-hidden flex p-0.5 bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] gap-0.5 shadow-inner">
           {subjectVolume.map((subj) => {
-            const isSelected = selectedSubject?.name === subj.name;
+            const isSelected = selectedSubject === subj.name;
             return (
               <div
                 key={subj.name}
-                onClick={() => setSelectedSubject(isSelected ? null : subj)}
+                onClick={() => handleCardClick(subj.name)}
                 className={`h-full rounded-lg transition-all cursor-pointer relative group ${
                   isSelected ? 'ring-2 ring-white scale-y-110 z-10' : 'hover:opacity-90'
                 }`}
@@ -168,14 +187,14 @@ export function VolumeAndCircadian() {
       {/* Subject Cards Grid with Goal Progress */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {subjectVolume.map((subj) => {
-          const isSelected = selectedSubject?.name === subj.name;
+          const isSelected = selectedSubject === subj.name;
           return (
             <div
               key={subj.name}
-              onClick={() => setSelectedSubject(isSelected ? null : subj)}
+              onClick={() => handleCardClick(subj.name)}
               className={`p-3.5 rounded-xl border transition-all cursor-pointer shadow-xs ${
                 isSelected
-                  ? 'border-[#9e3c26] bg-[#9e3c26]/5 dark:bg-[#9e3c26]/10 ring-1 ring-[#9e3c26]/30'
+                  ? 'border-[#9e3c26] bg-[#9e3c26]/5 dark:bg-[#9e3c26]/10 ring-2 ring-[#9e3c26]/40'
                   : 'bg-[rgb(var(--color-container-low))] border-[rgb(var(--color-border))] hover:border-[#9e3c26]/40'
               }`}
             >
@@ -193,7 +212,7 @@ export function VolumeAndCircadian() {
 
               <div className="flex items-center justify-between text-xs font-mono mb-2">
                 <span className="font-bold text-[rgb(var(--color-text))]">{subj.hours} hrs</span>
-                <span className="text-[rgb(var(--color-muted))]">{subj.percentage}% of total time</span>
+                <span className="text-[rgb(var(--color-muted))]">{subj.percentage}% of study time</span>
               </div>
 
               {/* Progress towards target */}
@@ -213,110 +232,224 @@ export function VolumeAndCircadian() {
               </div>
 
               <div className="mt-2.5 pt-2 border-t border-[rgb(var(--color-border))]/60 flex items-center justify-between text-[10px] font-mono text-[rgb(var(--color-muted))]">
-                <span>{subj.topicsLearned} topics active</span>
-                <span>{subj.masteryRate}% mastery</span>
+                <span>{subj.topicsLearned} active topics</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{subj.masteryRate}% mastery</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* 2. Clear Daily Peak Focus Hours (formerly Circadian Heatmap) */}
-      <div className="pt-4 border-t border-[rgb(var(--color-border))] space-y-3">
+      {/* Daily Focus & Energy Rhythm (Intuitive 24-Hour Rhythm Wave) */}
+      <div className="pt-4 border-t border-[rgb(var(--color-border))] space-y-4">
+        
+        {/* Header with Peak Badges */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <div className="text-xs font-bold text-[rgb(var(--color-text))] flex items-center gap-1.5">
-              <Clock size={14} className="text-amber-500" />
-              <span>Daily Peak Focus Hours (24H Heatmap)</span>
+              <Zap size={14} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
+              <span>Daily Focus & Energy Rhythm (24-Hour Wave)</span>
             </div>
             <p className="text-[11px] text-[rgb(var(--color-muted))] mt-0.5">
-              Shows which times of day your focus density and quiz accuracy are highest.
+              Your natural cognitive energy pattern. Taller bars indicate peak focus and fast recall.
             </p>
           </div>
 
-          <div className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400 font-mono text-[11px] font-bold shrink-0 flex items-center gap-1.5">
-            <Flame size={13} />
-            <span>Peak: 9-12 AM & 8-11 PM</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="px-2.5 py-1 rounded-lg bg-[#9e3c26]/10 border border-[#9e3c26]/25 text-[#9e3c26] dark:text-[#ffb4a3] font-mono text-[11px] font-bold flex items-center gap-1">
+              <Flame size={12} />
+              <span>Morning Peak: 9–12 AM (98%)</span>
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400 font-mono text-[11px] font-bold flex items-center gap-1">
+              <Star size={12} />
+              <span>Evening Peak: 8–11 PM (95%)</span>
+            </span>
           </div>
         </div>
 
-        {/* 24-Hour Blocks Heatmap */}
-        <div className="p-3 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] space-y-2">
-          <div className="grid grid-cols-12 sm:grid-cols-24 gap-1">
-            {circadianHeatmap.map((slot) => {
-              const colors = [
-                'bg-[rgb(var(--color-card))] border-dashed border-[rgb(var(--color-border))]', // 0
-                'bg-blue-500/25 border-blue-500/40', // 1
-                'bg-emerald-500/35 border-emerald-500/50', // 2
-                'bg-amber-500/50 border-amber-500/60', // 3
-                'bg-[#9e3c26] dark:bg-[#e26f54] border-[#9e3c26] text-white shadow-xs' // 4 (Peak)
-              ];
-              const isHovered = hoveredHour?.hour === slot.hour;
+        {/* 4 Clickable Time-of-Day Quick-Glance Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {(mockStats.daySegments || [
+            { id: 'morning', name: 'Morning', timeRange: '6 AM – 12 PM', avgScore: 92, tag: 'Peak Flow', bestFor: 'Complex mechanisms & math proofs' },
+            { id: 'afternoon', name: 'Afternoon', timeRange: '12 PM – 6 PM', avgScore: 78, tag: 'Steady Study', bestFor: 'Problem sets, lab notes & exercises' },
+            { id: 'evening', name: 'Evening', timeRange: '6 PM – 11 PM', avgScore: 94, tag: 'Sprint Peak', bestFor: '1v1 quiz duels & speed flashcards' },
+            { id: 'night', name: 'Night', timeRange: '11 PM – 6 AM', avgScore: 15, tag: 'Rest & Sleep', bestFor: 'Sleep & memory consolidation' },
+          ]).map((seg) => {
+            const isSegActive = hoveredHour ? hoveredHour.period === seg.id : false;
+            const icons = {
+              morning: <Sun size={13} className="text-amber-500" />,
+              afternoon: <Coffee size={13} className="text-amber-600 dark:text-amber-400" />,
+              evening: <Flame size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />,
+              night: <Moon size={13} className="text-sky-400" />
+            };
 
-              return (
-                <div
-                  key={slot.hour}
-                  onMouseEnter={() => setHoveredHour(slot)}
-                  onMouseLeave={() => setHoveredHour(null)}
-                  className={`h-9 rounded-md ${colors[slot.level]} transition-all cursor-pointer border flex items-end justify-center pb-1 relative group ${
-                    isHovered ? 'scale-115 ring-2 ring-white z-20 shadow-md' : 'hover:scale-105'
-                  }`}
-                >
-                  <span className="text-[8px] font-mono opacity-80 select-none">
-                    {slot.hour.slice(0, 2)}
+            return (
+              <div
+                key={seg.id}
+                className={`p-2.5 rounded-xl border text-xs transition-all ${
+                  isSegActive
+                    ? 'border-[#9e3c26] bg-[#9e3c26]/10 ring-1 ring-[#9e3c26]/30 shadow-xs'
+                    : 'bg-[rgb(var(--color-container-low))] border-[rgb(var(--color-border))]'
+                }`}
+              >
+                <div className="flex items-center justify-between font-mono text-[10px] mb-1">
+                  <span className="flex items-center gap-1 font-semibold text-[rgb(var(--color-text))]">
+                    {icons[seg.id]}
+                    <span>{seg.name}</span>
+                  </span>
+                  <span className={`px-1.5 py-0.2 rounded font-bold ${
+                    seg.id === 'morning' || seg.id === 'evening'
+                      ? 'text-[#9e3c26] dark:text-[#ffb4a3] bg-[#9e3c26]/10'
+                      : seg.id === 'afternoon'
+                      ? 'text-amber-700 dark:text-amber-400 bg-amber-500/10'
+                      : 'text-sky-700 dark:text-sky-400 bg-sky-500/10'
+                  }`}>
+                    {seg.avgScore > 20 ? `${seg.avgScore}%` : 'Rest'}
                   </span>
                 </div>
-              );
-            })}
+                <div className="text-[10px] font-mono text-[rgb(var(--color-muted))]">{seg.timeRange}</div>
+                <div className="text-[10px] text-[rgb(var(--color-muted))] line-clamp-1 mt-1 font-medium">
+                  {seg.bestFor}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 24-Hour Energy Wave Bar Graph with Variable Heights */}
+        <div className="p-4 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] space-y-3">
+          
+          {/* Chart Area with Horizontal Guide Lines & Proportional Bars */}
+          <div className="relative h-44 w-full flex items-end pt-6 pb-1">
+            
+            {/* Horizontal guide lines (25%, 50%, 75%, 100%) */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 border-b border-[rgb(var(--color-border))]">
+              <div className="border-b border-dashed border-[rgb(var(--color-text))] w-full flex justify-end pr-1 text-[8px] font-mono">100% Peak</div>
+              <div className="border-b border-dashed border-[rgb(var(--color-text))] w-full flex justify-end pr-1 text-[8px] font-mono">75% Deep</div>
+              <div className="border-b border-dashed border-[rgb(var(--color-text))] w-full flex justify-end pr-1 text-[8px] font-mono">50% Steady</div>
+              <div className="border-b border-dashed border-[rgb(var(--color-text))] w-full flex justify-end pr-1 text-[8px] font-mono">25% Light</div>
+            </div>
+
+            {/* 24 Dynamic Height Vertical Bars */}
+            <div className="relative w-full h-full flex items-end justify-between gap-1 sm:gap-1.5 z-10">
+              {circadianHeatmap.map((slot) => {
+                const isHovered = hoveredHour?.hour === slot.hour;
+                const isPeak = slot.isPeak || slot.level === 4;
+                const barHeight = Math.max(12, slot.score || 0);
+
+                // Distinct styling based on focus intensity
+                let barColor = 'bg-[rgb(var(--color-card))] border border-dashed border-[rgb(var(--color-border))] opacity-50';
+                if (slot.score >= 90) {
+                  barColor = 'bg-gradient-to-t from-[#9e3c26] to-[#e26f54] text-white shadow-sm ring-1 ring-[#9e3c26]/50';
+                } else if (slot.score >= 80) {
+                  barColor = 'bg-gradient-to-t from-amber-600/90 to-amber-400 text-white';
+                } else if (slot.score >= 60) {
+                  barColor = 'bg-gradient-to-t from-emerald-600/80 to-emerald-400/90 text-white';
+                } else if (slot.score >= 30) {
+                  barColor = 'bg-sky-500/40 border border-sky-500/40 text-sky-800 dark:text-sky-300';
+                }
+
+                return (
+                  <div
+                    key={slot.hour}
+                    onMouseEnter={() => setHoveredHour(slot)}
+                    onMouseLeave={() => setHoveredHour(null)}
+                    className="flex-1 h-full flex flex-col justify-end items-center group cursor-pointer relative"
+                  >
+                    {/* Small star above peak bars */}
+                    {isPeak && (
+                      <div className="mb-0.5 text-[8px] text-[#9e3c26] dark:text-[#ffb4a3] animate-bounce">
+                        ★
+                      </div>
+                    )}
+
+                    {/* Proportional Bar */}
+                    <div
+                      style={{ height: `${barHeight}%` }}
+                      className={`w-full rounded-t-md transition-all flex items-end justify-center pb-1 ${barColor} ${
+                        isHovered ? 'scale-y-105 scale-x-125 z-30 ring-2 ring-white shadow-lg' : 'hover:opacity-90'
+                      }`}
+                    >
+                      {/* Show percentage or 2-digit hour only on hover or tall bars */}
+                      {barHeight >= 70 && (
+                        <span className="text-[7px] font-mono font-bold select-none opacity-80 rotate-[-90deg] sm:rotate-0 hidden sm:inline">
+                          {slot.score}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Time axis labels */}
-          <div className="flex items-center justify-between text-[10px] font-mono text-[rgb(var(--color-muted))] px-0.5 pt-0.5">
-            <span>12 AM (Midnight)</span>
+          {/* 12-Hour AM/PM Milestone Axis Labels */}
+          <div className="flex items-center justify-between text-[10px] font-mono text-[rgb(var(--color-muted))] px-0.5 pt-1 border-t border-[rgb(var(--color-border))]">
+            <span>12 AM</span>
+            <span>3 AM</span>
             <span>6 AM</span>
-            <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-bold">12 PM (Noon)</span>
+            <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-bold">9 AM (Peak)</span>
+            <span>12 PM</span>
+            <span>3 PM</span>
             <span>6 PM</span>
+            <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-bold">9 PM (Peak)</span>
             <span>11 PM</span>
           </div>
 
-          {/* Dynamic Hover or Default Legend Box */}
+          {/* Time Zone Segment Ribbon */}
+          <div className="grid grid-cols-4 gap-1 text-center text-[9px] font-mono pt-0.5">
+            <span className="py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-sky-300 font-medium">💤 Night Rest (12–6 AM)</span>
+            <span className="py-0.5 rounded bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] font-bold">🌅 Morning Flow (6–12 PM)</span>
+            <span className="py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium">☀️ Afternoon Study (12–6 PM)</span>
+            <span className="py-0.5 rounded bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] font-bold">🌙 Evening Sprints (6–11 PM)</span>
+          </div>
+
+          {/* Interactive Inspection Card */}
           <div className="mt-2 p-2.5 rounded-lg bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
             {hoveredHour ? (
-              <div className="flex items-center gap-2 text-[rgb(var(--color-text))]">
-                <span className="font-bold text-[#9e3c26] dark:text-[#ffb4a3]">{hoveredHour.hour}</span>
+              <div className="flex items-center gap-2 text-[rgb(var(--color-text))] flex-wrap">
+                <span className="font-bold text-[#9e3c26] dark:text-[#ffb4a3]">
+                  {hoveredHour.hour12 || hoveredHour.hour}
+                </span>
                 <span>•</span>
                 <span className="font-semibold">{hoveredHour.label}</span>
                 <span>•</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">{hoveredHour.focusScore} Focus Flow</span>
+                <span className={`font-bold ${
+                  (hoveredHour.score || 0) >= 90
+                    ? 'text-[#9e3c26] dark:text-[#ffb4a3]'
+                    : (hoveredHour.score || 0) >= 70
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-emerald-600 dark:text-emerald-400'
+                }`}>
+                  {hoveredHour.focusScore || `${hoveredHour.score}%`} Focus
+                </span>
+                {hoveredHour.recommendation && (
+                  <>
+                    <span>•</span>
+                    <span className="text-[rgb(var(--color-muted))] text-[11px]">
+                      {hoveredHour.recommendation}
+                    </span>
+                  </>
+                )}
               </div>
             ) : (
-              <div className="flex items-center gap-3 text-[10px] text-[rgb(var(--color-muted))] flex-wrap">
-                <span className="font-semibold text-[rgb(var(--color-text))]">Legend:</span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))]" /> Rest / Sleep
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-emerald-500/35" /> Light Focus
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-amber-500/50" /> Moderate Study
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-[#9e3c26] dark:bg-[#e26f54]" /> Peak Flow
-                </span>
+              <div className="flex items-center gap-2 text-[11px] text-[rgb(var(--color-muted))]">
+                <Info size={13} className="text-[#9e3c26] dark:text-[#ffb4a3] shrink-0" />
+                <span>Hover over any bar to view your focus score and best study task for that hour.</span>
               </div>
             )}
-            <span className="text-[10px] text-[rgb(var(--color-muted))] shrink-0">
-              Hover any bar to see stats
+            <span className="text-[10px] text-[rgb(var(--color-muted))] shrink-0 hidden sm:inline">
+              Height = Focus Intensity
             </span>
           </div>
+
         </div>
 
         {/* Actionable takeaway tip */}
         <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-[rgb(var(--color-container-low))] to-transparent border border-amber-500/20 text-xs text-[rgb(var(--color-muted))] flex items-start gap-2">
           <span className="text-amber-500 font-bold shrink-0">💡 Strategy:</span>
           <span>
-            Schedule heavy chemical mechanisms & math proofs between <strong>09:00 - 12:00</strong> when your flow is highest, and use <strong>20:00 - 23:00</strong> for quick flashcard quiz sprints.
+            Tackle high-difficulty concepts (Reaction Mechanisms & Math Proofs) during your <strong>09:00 – 12:00</strong> morning peak, and save <strong>20:00 – 23:00</strong> for rapid 1v1 quiz duels and flashcard sprints.
           </span>
         </div>
 
@@ -326,7 +459,7 @@ export function VolumeAndCircadian() {
   );
 }
 
-export function RetentionCurveSection() {
+export function RetentionCurveSection({ selectedSubject = 'All' }) {
   const { retentionCurve, upcomingSchedule } = mockStats;
   const [selectedForecastDay, setSelectedForecastDay] = useState('Mon');
 
@@ -339,18 +472,18 @@ export function RetentionCurveSection() {
         <div className="p-3 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-2xl text-xs font-mono space-y-1.5 z-50">
           <div className="font-bold text-[rgb(var(--color-text))] flex items-center justify-between gap-3 border-b border-[rgb(var(--color-border))] pb-1">
             <span>{data.day}</span>
-            <span className="text-[10px] text-[#9e3c26] dark:text-[#ffb4a3]">{data.stage}</span>
+            <span className="text-[10px] text-[#9e3c26] dark:text-[#ffb4a3] font-semibold">{data.stage}</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-emerald-600 dark:text-emerald-400 font-semibold">
-            <span>🧠 With Rivisonly:</span>
+            <span>🟢 With Rivisonly Spaced Reviews:</span>
             <span className="font-bold">{data.aiRetention}% Remembered</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-red-600 dark:text-red-400">
-            <span>📉 Without Review:</span>
+            <span>🔴 Without Review (Natural Forgetting):</span>
             <span className="font-bold">{data.unprompted}% Remembered</span>
           </div>
           <div className="pt-1 border-t border-[rgb(var(--color-border))]/60 text-[10px] text-[rgb(var(--color-muted))]">
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">+{difference}% retention saved</span> • {data.tip}
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">+{difference}% Retention Advantage</span> • {data.tip}
           </div>
         </div>
       );
@@ -363,18 +496,18 @@ export function RetentionCurveSection() {
   return (
     <div className="p-5 sm:p-6 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none space-y-5">
       
-      {/* 1. Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[rgb(var(--color-border))]">
         <div>
           <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] font-semibold">
             <Brain size={12} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-            <span>MEMORY RETENTION ENGINE</span>
+            <span>RETENTION & FORGETTING CURVE</span>
           </div>
           <h3 className="text-lg font-bold text-[rgb(var(--color-text))] mt-0.5">
             Your Memory Retention vs. Normal Forgetting
           </h3>
           <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
-            Compare how much you remember using Rivisonly's spaced reviews vs. passive cramming.
+            How smart spaced reviews lock knowledge into long-term memory vs. passive cramming.
           </p>
         </div>
 
@@ -389,12 +522,12 @@ export function RetentionCurveSection() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-xs font-bold text-[rgb(var(--color-text))]">With Rivisonly Spaced Reviews</span>
+              <span className="text-xs font-bold text-[rgb(var(--color-text))]">With Rivisonly (Spaced Reviews)</span>
             </div>
             <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">91.4% Recall</span>
           </div>
           <p className="text-[11px] text-[rgb(var(--color-muted))]">
-            Short 3-minute reviews at Days 1, 3, 7, 14 & 30 keep knowledge fresh in permanent memory.
+            Short 3-minute reviews at Days 1, 3, 7, 14, 21 & 30 keep material permanently fresh.
           </p>
         </div>
 
@@ -407,21 +540,21 @@ export function RetentionCurveSection() {
             <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400">12.0% Recall</span>
           </div>
           <p className="text-[11px] text-[rgb(var(--color-muted))]">
-            Without review, 70% of facts vanish within 48 hours and 88% is lost within 30 days.
+            Without review, 55% vanishes in 3 days, dropping to only 12% by Day 30.
           </p>
         </div>
       </div>
 
-      {/* Line / Area Chart with Custom Tooltip */}
+      {/* Composed Chart with Explicit Units and Review Anchors */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-[11px] font-mono text-[rgb(var(--color-muted))]">
           <span>Retention (%)</span>
-          <span>Hover points on curve for details</span>
+          <span>Hover review checkpoints for details</span>
         </div>
 
         <div className="h-44 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={retentionCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <ComposedChart data={retentionCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="aiRetentionGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#2d7d46" stopOpacity={0.35} />
@@ -430,7 +563,12 @@ export function RetentionCurveSection() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
               <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="rgb(var(--color-muted))" />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="rgb(var(--color-muted))" />
+              <YAxis 
+                domain={[0, 100]} 
+                tick={{ fontSize: 10 }} 
+                stroke="rgb(var(--color-muted))"
+                tickFormatter={(v) => `${v}%`}
+              />
               <Tooltip content={<CustomRetentionTooltip />} />
               <Area
                 type="monotone"
@@ -439,7 +577,9 @@ export function RetentionCurveSection() {
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#aiRetentionGrad)"
-                name="Rivisonly Recall (~91%)"
+                name="With Rivisonly"
+                dot={{ r: 3.5, fill: '#2d7d46', strokeWidth: 1.5, stroke: '#fff' }}
+                activeDot={{ r: 5, fill: '#2d7d46' }}
               />
               <Line
                 type="monotone"
@@ -447,15 +587,27 @@ export function RetentionCurveSection() {
                 stroke="#c84b31"
                 strokeDasharray="4 4"
                 strokeWidth={2}
-                dot={false}
-                name="Without Review (~12%)"
+                dot={{ r: 2.5, fill: '#c84b31' }}
+                name="Without Review"
               />
-            </AreaChart>
+            </ComposedChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* Visual Chart Legend */}
+        <div className="flex items-center justify-center gap-6 pt-1 text-xs font-mono text-[rgb(var(--color-muted))]">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
+            <span className="font-medium text-[rgb(var(--color-text))]">With Rivisonly Spaced Reviews (~91%)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-4 h-0.5 border-b-2 border-dashed border-red-500 inline-block" />
+            <span className="font-medium text-[rgb(var(--color-text))]">Without Review (~12%)</span>
+          </div>
         </div>
       </div>
 
-      {/* 2. Upcoming 7-Day Revision Load Forecast */}
+      {/* Upcoming 7-Day Revision Load Forecast */}
       <div className="pt-4 border-t border-[rgb(var(--color-border))] space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div>
@@ -468,7 +620,7 @@ export function RetentionCurveSection() {
             </p>
           </div>
           <span className="text-xs font-mono font-bold text-[#9e3c26] dark:text-[#ffb4a3]">
-            142 Due Total (~1h 15m)
+            142 Cards Due Total (~1h 15m)
           </span>
         </div>
 
@@ -524,41 +676,68 @@ export function RetentionCurveSection() {
   );
 }
 
-export function ThirtyDayFocusBarChart() {
+export function ThirtyDayFocusBarChart({ period = '30D' }) {
   const { thirtyDayMinutes } = mockStats;
+
+  // Adapt data based on period
+  const chartData = period === '7D' 
+    ? thirtyDayMinutes.slice(-7)
+    : thirtyDayMinutes;
+
+  const totalMinutes = chartData.reduce((acc, d) => acc + d.minutes, 0);
+  const avgMinutes = Math.round(totalMinutes / (chartData.length || 1));
+  const daysMetGoal = chartData.filter(d => d.minutes >= 180).length;
 
   return (
     <div className="p-6 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <span className="text-[10px] font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] font-semibold">
-            CHRONOMETRIC VELOCITY • DAILY FOCUS TARGET: 180 MIN
+            DAILY STUDY TIME • TARGET: 180 MIN / DAY
           </span>
           <h3 className="text-lg font-bold text-[rgb(var(--color-text))] mt-0.5">
-            30-Day Focus Minutes & Active Continuity
+            {period === '7D' ? '7-Day' : '30-Day'} Study Time & Consistency
           </h3>
+          <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
+            Daily focus minutes logged. Green bars hit or exceeded your 180-minute target.
+          </p>
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono">
           <span className="px-2.5 py-1 rounded-full bg-[#9e3c26]/10 dark:bg-[#e26f54]/15 text-[#9e3c26] dark:text-[#ffb4a3] font-bold flex items-center gap-1 border border-[#9e3c26]/20">
             <Flame size={12} />
-            <span>19 Days Streak</span>
+            <span>19 Day Streak</span>
           </span>
           <span className="px-2.5 py-1 rounded-full bg-[rgb(var(--color-secondary-container))] text-[rgb(var(--color-secondary))] font-bold flex items-center gap-1 border border-[rgb(var(--color-secondary))]/20">
             <CheckCircle2 size={12} />
-            <span>93% Consistency</span>
+            <span>{daysMetGoal}/{chartData.length} Days Met Goal</span>
           </span>
         </div>
       </div>
 
-      {/* 30-Day Bar Chart */}
-      <div className="h-48 w-full">
+      {/* Bar Chart with ReferenceLine for Target */}
+      <div className="h-52 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={thirtyDayMinutes}>
-            <XAxis dataKey="day" tick={{ fontSize: 9 }} stroke="rgb(var(--color-muted))" />
-            <YAxis tick={{ fontSize: 9 }} stroke="rgb(var(--color-muted))" />
+          <BarChart data={chartData} margin={{ top: 15, right: 10, left: -15, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+            <XAxis 
+              dataKey="day" 
+              tick={{ fontSize: 9 }} 
+              stroke="rgb(var(--color-muted))"
+              interval={period === '7D' ? 0 : 2}
+              tickFormatter={(day) => `Day ${day}`}
+            />
+            <YAxis 
+              tick={{ fontSize: 9 }} 
+              stroke="rgb(var(--color-muted))"
+              tickFormatter={(v) => `${v}m`}
+            />
             <Tooltip
-              formatter={(value) => [`${value} min`, 'Focus Time']}
+              formatter={(value) => {
+                const diff = value - 180;
+                const status = diff >= 0 ? `(+${diff}m above goal)` : `(${Math.abs(diff)}m below goal)`;
+                return [`${value} min ${status}`, 'Focus Time'];
+              }}
               labelFormatter={(label) => `Day ${label}`}
               contentStyle={{
                 backgroundColor: 'rgb(var(--color-card))',
@@ -568,22 +747,63 @@ export function ThirtyDayFocusBarChart() {
                 color: 'rgb(var(--color-text))'
               }}
             />
-            <Bar dataKey="minutes" fill="#006c4a" radius={[4, 4, 0, 0]} />
+            {/* Target Goal Line */}
+            <ReferenceLine 
+              y={180} 
+              stroke="#9e3c26" 
+              strokeDasharray="4 4" 
+              strokeWidth={1.5}
+              label={{ 
+                value: 'Goal: 180m', 
+                fill: '#9e3c26', 
+                fontSize: 10, 
+                position: 'insideTopRight' 
+              }} 
+            />
+            <Bar dataKey="minutes" radius={[4, 4, 0, 0]}>
+              {chartData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry.minutes >= 180 ? '#2d7d46' : '#4f7cac'} 
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="flex items-center justify-between text-[11px] font-mono text-[rgb(var(--color-muted))] pt-1">
-        <span>30 Days Ago</span>
-        <span>15 Days Ago</span>
-        <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-bold">Today (236 min active)</span>
+      {/* Footer Info & Legend */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] font-mono text-[rgb(var(--color-muted))] pt-1 gap-2 border-t border-[rgb(var(--color-border))]/60">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded bg-[#2d7d46]" />
+            <span>Goal Reached (≥180m)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded bg-[#4f7cac]" />
+            <span>Under Target (&lt;180m)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-0.5 border-b border-dashed border-[#9e3c26]" />
+            <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-semibold">180m Target Line</span>
+          </div>
+        </div>
+
+        <div className="font-bold text-[rgb(var(--color-text))]">
+          Daily Average: {avgMinutes} min / day
+        </div>
       </div>
     </div>
   );
 }
 
-export function SynchronousArenaTable() {
+export function SynchronousArenaTable({ selectedSubject = 'All' }) {
   const { recentDuels, subjectAccuracy, overallVelocity } = mockStats;
+
+  // Filter duels if a specific subject is chosen
+  const filteredDuels = selectedSubject === 'All' 
+    ? recentDuels 
+    : recentDuels.filter(d => d.subject.toLowerCase().includes(selectedSubject.toLowerCase()) || selectedSubject.toLowerCase().includes(d.subject.toLowerCase()));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -593,16 +813,19 @@ export function SynchronousArenaTable() {
         <div className="flex items-center justify-between">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] font-semibold">
-              SYNCHRONOUS ARENA
+              LIVE QUIZ DUELS
             </span>
             <h3 className="text-base font-bold text-[rgb(var(--color-text))]">
               Recent Head-to-Head Duels
             </h3>
           </div>
-          <button className="text-xs text-[#9e3c26] dark:text-[#ffb4a3] hover:underline font-mono font-medium flex items-center gap-1 cursor-pointer">
+          <Link 
+            to="/rooms"
+            className="text-xs text-[#9e3c26] dark:text-[#ffb4a3] hover:underline font-mono font-medium flex items-center gap-1 cursor-pointer"
+          >
             <span>Find Challenger</span>
             <ChevronRight size={13} />
-          </button>
+          </Link>
         </div>
 
         <div className="overflow-x-auto">
@@ -610,13 +833,13 @@ export function SynchronousArenaTable() {
             <thead>
               <tr className="border-b border-[rgb(var(--color-border))] text-[10px] font-mono text-[rgb(var(--color-muted))] uppercase">
                 <th className="pb-2">OPPONENT</th>
-                <th className="pb-2">SUBJECT & FIELD</th>
-                <th className="pb-2 text-right">SCORE / SPEED DELTA</th>
+                <th className="pb-2">SUBJECT & TOPIC</th>
+                <th className="pb-2 text-right">SCORE & TIME</th>
                 <th className="pb-2 text-right">RESULT</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[rgb(var(--color-border))]">
-              {recentDuels.map((duel) => (
+              {(filteredDuels.length > 0 ? filteredDuels : recentDuels).map((duel) => (
                 <tr key={duel.id} className="hover:bg-[rgb(var(--color-container-low))] transition-colors">
                   <td className="py-3">
                     <div className="flex items-center gap-2.5">
@@ -631,8 +854,9 @@ export function SynchronousArenaTable() {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 text-[rgb(var(--color-muted))]">
-                    {duel.subject}
+                  <td className="py-3">
+                    <div className="font-medium text-[rgb(var(--color-text))]">{duel.subject}</div>
+                    <div className="text-[10px] font-mono text-[rgb(var(--color-muted))]">{duel.topic}</div>
                   </td>
                   <td className="py-3 text-right font-mono">
                     <div className="font-bold text-[rgb(var(--color-text))]">{duel.score} in {duel.timeTaken}</div>
@@ -658,34 +882,42 @@ export function SynchronousArenaTable() {
       <div className="lg:col-span-5 p-6 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none space-y-4 flex flex-col justify-between">
         <div>
           <span className="text-[10px] font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] font-semibold">
-            COMBAT PRECISION
+            SUBJECT ACCURACY
           </span>
           <h3 className="text-base font-bold text-[rgb(var(--color-text))]">
-            Subject Duel Accuracy
+            Subject Quiz Accuracy
           </h3>
           <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
-            Real-time answer accuracy and response latency across all 40 competitive sprints.
+            Real-time answer accuracy and average response speed across competitive quiz sprints.
           </p>
 
           <div className="space-y-3.5 mt-5">
-            {subjectAccuracy.map((acc) => (
-              <div key={acc.subject} className="space-y-1">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-[rgb(var(--color-text))] font-medium">{acc.subject}</span>
-                  <span className="text-[rgb(var(--color-muted))]">
-                    <strong className="text-[rgb(var(--color-text))]">{acc.accuracy}%</strong> ({acc.latency})
-                  </span>
+            {subjectAccuracy.map((acc) => {
+              const isHighlighted = selectedSubject !== 'All' && acc.subject.toLowerCase().includes(selectedSubject.toLowerCase());
+              return (
+                <div 
+                  key={acc.subject} 
+                  className={`space-y-1 p-2 rounded-lg transition-all ${
+                    isHighlighted ? 'bg-[#9e3c26]/10 ring-1 ring-[#9e3c26]/30' : ''
+                  }`}
+                >
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-[rgb(var(--color-text))] font-medium">{acc.subject}</span>
+                    <span className="text-[rgb(var(--color-muted))]">
+                      <strong className="text-[rgb(var(--color-text))]">{acc.accuracy}%</strong> ({acc.latency})
+                    </span>
+                  </div>
+                  <ProgressBar value={acc.accuracy} height="h-2" color="bg-[#9e3c26] dark:bg-[#e26f54]" />
                 </div>
-                <ProgressBar value={acc.accuracy} height="h-2" color="bg-[#9e3c26] dark:bg-[#e26f54]" />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         <div className="pt-4 border-t border-[rgb(var(--color-border))] flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-1.5 text-[rgb(var(--color-secondary))] font-medium">
             <Sparkles size={13} />
-            <span>Overall Recall Velocity</span>
+            <span>Average Answer Speed</span>
           </div>
           <span className="font-bold text-[rgb(var(--color-text))]">{overallVelocity}</span>
         </div>
@@ -695,3 +927,4 @@ export function SynchronousArenaTable() {
     </div>
   );
 }
+
