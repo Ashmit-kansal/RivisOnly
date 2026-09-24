@@ -130,10 +130,10 @@ export default function FileUploader({ activeSubject, activeFolder, onFileUpload
       onClick={() => {
         if (!uploadProgress) fileInputRef.current?.click();
       }}
-      className={`p-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center relative overflow-hidden select-none ${
+      className={`p-3 rounded-2xl border border-dashed transition-all cursor-pointer text-center relative overflow-hidden select-none ${
         isDragging
           ? 'border-[#9e3c26] bg-[#9e3c26]/10 scale-[1.01]'
-          : 'border-[rgb(var(--color-border))] hover:border-[#9e3c26]/50 bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] shadow-xs'
+          : 'border-[rgb(var(--color-border))] hover:border-[#9e3c26]/50 bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] shadow-2xs'
       } ${uploadProgress ? 'pointer-events-none' : ''}`}
     >
       <input
@@ -146,52 +146,43 @@ export default function FileUploader({ activeSubject, activeFolder, onFileUpload
         className="hidden"
       />
 
-      <div className="flex flex-col items-center justify-center gap-2">
-        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
+      <div className="flex items-center justify-center gap-2.5">
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${
           uploadProgress 
             ? 'bg-[#9e3c26] text-white animate-pulse' 
             : 'bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3]'
         }`}>
-          <UploadCloud size={20} />
+          <UploadCloud size={16} />
         </div>
 
-        <div>
-          <h4 className="font-semibold text-xs sm:text-sm text-[rgb(var(--color-text))]">
-            Drop files here to ingest
-          </h4>
-          <p className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-0.5">
-            PDF, PNG, JPG, DOCX, TXT, MD
-          </p>
-          <div className="inline-flex items-center gap-1 text-[10px] font-mono text-[#9e3c26] dark:text-[#ffb4a3] bg-[#9e3c26]/10 px-2 py-0.5 rounded-md mt-1.5 font-medium max-w-full truncate">
-            <span>Target:</span>
-            <span className="truncate max-w-[170px]">{activeSubject || 'Academic'} / {activeFolder || 'General Notes'}</span>
+        <div className="text-left min-w-0 flex-1">
+          <div className="font-semibold text-xs text-[rgb(var(--color-text))] truncate">
+            Drop files here or <span className="text-[#9e3c26] dark:text-[#ffb4a3] underline">browse</span>
+          </div>
+          <div className="text-[10px] font-mono text-[rgb(var(--color-muted))] truncate mt-0.5">
+            PDF, DOCX, PNG, TXT → <span className="text-[rgb(var(--color-text))] font-medium">{activeFolder || 'General Notes'}</span>
           </div>
         </div>
-
-        {uploadProgress ? (
-          <div className="w-full max-w-xs mt-2 space-y-1">
-            <div className="flex justify-between text-[10px] font-mono text-[rgb(var(--color-muted))]">
-              <span className="truncate max-w-[170px] font-medium text-[rgb(var(--color-text))]">{uploadProgress.name}</span>
-              <span className="font-bold text-[#9e3c26] dark:text-[#ffb4a3]">{uploadProgress.progress}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-[rgb(var(--color-container-highest))] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#9e3c26] dark:bg-[#e26f54] transition-all duration-300"
-                style={{ width: `${uploadProgress.progress}%` }}
-              />
-            </div>
-            <div className="text-[9px] font-mono text-[rgb(var(--color-muted))] text-left flex items-center gap-1">
-              <Sparkles size={9} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-              <span>{uploadProgress.status}</span>
-            </div>
-          </div>
-        ) : (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgb(var(--color-secondary-container))] text-[rgb(var(--color-secondary))] text-[10px] font-mono font-bold mt-1 border border-[rgb(var(--color-secondary))]/20">
-            <Sparkles size={11} />
-            <span>Auto-Vector & LocalStorage Synced</span>
-          </div>
-        )}
       </div>
+
+      {uploadProgress && (
+        <div className="w-full mt-2.5 space-y-1">
+          <div className="flex justify-between text-[10px] font-mono text-[rgb(var(--color-muted))]">
+            <span className="truncate max-w-[170px] font-medium text-[rgb(var(--color-text))]">{uploadProgress.name}</span>
+            <span className="font-bold text-[#9e3c26] dark:text-[#ffb4a3]">{uploadProgress.progress}%</span>
+          </div>
+          <div className="w-full h-1 bg-[rgb(var(--color-container-highest))] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#9e3c26] dark:bg-[#e26f54] transition-all duration-300"
+              style={{ width: `${uploadProgress.progress}%` }}
+            />
+          </div>
+          <div className="text-[9px] font-mono text-[rgb(var(--color-muted))] text-left flex items-center gap-1">
+            <Sparkles size={9} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
+            <span>{uploadProgress.status}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,7 +8,9 @@ export default function NoteEditor({
   activeSubject, 
   activeFolder, 
   onSave,
-  forcedViewMode 
+  forcedViewMode,
+  showSidebar,
+  onToggleSidebar
 }) {
   const fileType = (activeFile?.type || '').toLowerCase();
   const fileName = (activeFile?.name || '').toLowerCase();
@@ -22,6 +24,8 @@ export default function NoteEditor({
         activeFile={activeFile}
         activeSubject={activeSubject}
         activeFolder={activeFolder}
+        showSidebar={showSidebar}
+        onToggleSidebar={onToggleSidebar}
       />
     );
   }
@@ -32,6 +36,8 @@ export default function NoteEditor({
         activeFile={activeFile}
         activeSubject={activeSubject}
         activeFolder={activeFolder}
+        showSidebar={showSidebar}
+        onToggleSidebar={onToggleSidebar}
       />
     );
   }
@@ -44,6 +50,8 @@ export default function NoteEditor({
       activeFolder={activeFolder}
       onSave={onSave}
       initialMode={forcedViewMode === 'preview' ? 'read' : 'edit'}
+      showSidebar={showSidebar}
+      onToggleSidebar={onToggleSidebar}
     />
   );
 }

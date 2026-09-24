@@ -171,3 +171,60 @@ export function resolveInitialVaultState(allSubjects) {
     modal: null
   };
 }
+
+/**
+ * Helper to read uploaded files asynchronously as DataURL, Text, or formatted HTML
+ */
+export function readFileAsync(file, type, fileExt, activeSubject = 'Knowledge Vault', activeFolder = 'General Notes') {
+  return new Promise((resolve) => {
+    // Images: Read as Data URL so they survive page refreshes in localStorage
+    if (type === 'png') {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve({ fileUrl: e.target.result, content: null });
+      reader.onerror = () => resolve({ fileUrl: URL.createObjectURL(file), content: null });
+      reader.readAsDataURL(file);
+    } 
+    // Small PDFs (<= 2.5 MB): Read as Data URL to persist in localStorage
+    else if (type === 'pdf') {
+      if (file.size <= 2.5 * 1024 * 1024) {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve({ fileUrl: e.target.result, content: null });
+        reader.onerror = () => resolve({ fileUrl: URL.createObjectURL(file), content: null });
+        reader.readAsDataURL(file);
+      } else {
+        // Large PDFs: use in-memory blob URL
+        resolve({ fileUrl: URL.createObjectURL(file), content: null });
+      }
+    } 
+    // Text or Markdown: Read as text
+    else if (fileExt === 'txt' || fileExt === 'md') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawText = e.target.result || '';
+        const lines = rawText.split('\n');
+        let formattedHtml = '';
+        lines.forEach(l => {
+          const trimmed = l.trim();
+          if (trimmed.startsWith('# ')) {
+            formattedHtml += `<h2>${trimmed.replace(/^#\s+/, '')}</h2>`;
+          } else if (trimmed.startsWith('## ')) {
+            formattedHtml += `<h3>${trimmed.replace(/^##\s+/, '')}</h3>`;
+          } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            formattedHtml += `<li>${trimmed.replace(/^[-*]\s+/, '')}</li>`;
+          } else if (trimmed) {
+            formattedHtml += `<p>${trimmed}</p>`;
+          }
+        });
+        resolve({ fileUrl: null, content: formattedHtml || `<p>${rawText.replace(/\n/g, '<br />')}</p>` });
+      };
+      reader.onerror = () => resolve({ fileUrl: null, content: null });
+      reader.readAsText(file);
+    } 
+    // Word Documents / Rich Notes: Create starter template
+    else {
+      const baseName = file.name.replace(/\.[^/.]+$/, '');
+      const starter = `<h2>${baseName}</h2><p>Ingested Word Document synchronized into <strong>${activeSubject}</strong> / <strong>${activeFolder}</strong>.</p><blockquote><strong>Archived Resource:</strong> File ${file.name} (${Math.max(1, (file.size / 1024).toFixed(0))} KB) parsed and available for live inline editing and spaced revision review.</blockquote>`;
+      resolve({ fileUrl: null, content: starter });
+    }
+  });
+}

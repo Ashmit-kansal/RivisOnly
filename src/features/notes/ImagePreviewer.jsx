@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ZoomIn, ZoomOut, RotateCw, Download, Maximize2, 
   Minimize2, Image as ImageIcon, Grid, Info, Sparkles, 
-  Bookmark, Check, FlipHorizontal
+  Bookmark, Check, FlipHorizontal, PanelLeftOpen
 } from 'lucide-react';
 
-export default function ImagePreviewer({ activeFile, activeSubject, activeFolder }) {
+export default function ImagePreviewer({ 
+  activeFile, 
+  activeSubject, 
+  activeFolder,
+  showSidebar,
+  onToggleSidebar 
+}) {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [rotation, setRotation] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -42,6 +48,17 @@ export default function ImagePreviewer({ activeFile, activeSubject, activeFolder
       URL.revokeObjectURL(url);
     }
   };
+
+  // Keyboard shortcut: Press Escape to collapse fullscreen/expanded view
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
 
   return (
     <div className={`bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] rounded-2xl shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none flex flex-col h-full overflow-hidden ${
@@ -158,16 +175,41 @@ export default function ImagePreviewer({ activeFile, activeSubject, activeFolder
             <Download size={13} />
           </button>
 
-          {/* Fullscreen */}
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-xl bg-[rgb(var(--color-card))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors cursor-pointer"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-          </button>
+          {/* Fullscreen Expand / Collapse */}
+          {isFullscreen ? (
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs shadow-md shadow-[#9e3c26]/20 transition-all cursor-pointer animate-in fade-in"
+              title="Collapse to Previous Position (Esc)"
+            >
+              <Minimize2 size={13} />
+              <span>Collapse</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[rgb(var(--color-card))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] text-xs font-mono transition-colors cursor-pointer"
+              title="Expand to Fullscreen"
+            >
+              <Maximize2 size={13} />
+              <span className="hidden sm:inline">Expand</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Floating Quick-Collapse Badge in Fullscreen Mode */}
+      {isFullscreen && (
+        <button
+          onClick={() => setIsFullscreen(false)}
+          className="fixed top-3 right-4 z-[60] flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 hover:bg-neutral-900 text-white border border-white/20 text-xs font-semibold shadow-2xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer"
+          title="Collapse to previous position (Esc)"
+        >
+          <Minimize2 size={13} className="text-[#ffb4a3]" />
+          <span>Collapse View</span>
+          <kbd className="px-1.5 py-0.2 rounded bg-white/20 text-[10px] font-mono text-white/80">Esc</kbd>
+        </button>
+      )}
 
       {/* Main Canvas Area */}
       <div className={`flex-1 flex overflow-hidden ${

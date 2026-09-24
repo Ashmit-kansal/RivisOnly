@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import FileTree from '../features/notes/FileTree';
 import NoteEditor from '../features/notes/NoteEditor';
-import FileUploader from '../features/notes/FileUploader';
 import RevisionReminderModal from '../features/notes/RevisionReminderModal';
-import CreateRevisionModal from '../features/revision/CreateRevisionModal';
 import Modal from '../components/ui/Modal';
 import { mockSubjects } from '../data/mockNotes';
 import {
@@ -12,13 +10,13 @@ import {
   safeSaveToStorage,
   clearNotesStorage,
   resolveInitialVaultState,
+  readFileAsync,
   ACTIVE_SUBJ_KEY,
   ACTIVE_FOLDER_KEY,
   ACTIVE_FILE_KEY
 } from '../utils/notesStorage';
 import { 
-  Plus, Brain, FolderPlus, ArrowRight, 
-  Layers, FileText, Database, BookOpen, Clock,
+  Plus, FolderPlus, FileText,
   PanelLeftClose, PanelLeftOpen, Trash2, RotateCcw,
   CheckCircle2, UploadCloud
 } from 'lucide-react';
@@ -55,8 +53,6 @@ export default function NotesVault() {
   const [newDocSubjectId, setNewDocSubjectId] = useState(subjects[0]?.id || 'subj-1');
   const [newDocFolderName, setNewDocFolderName] = useState(subjects[0]?.folders[0]?.name || 'General Notes');
   const [newDocTemplate, setNewDocTemplate] = useState('lecture');
-
-  const [showCreateRevModal, setShowCreateRevModal] = useState(false);
   const [editorViewMode, setEditorViewMode] = useState('edit');
 
   // In-app Toast notification state
@@ -160,7 +156,7 @@ export default function NotesVault() {
     setShowReminderModal(true);
   };
 
-  // Upload new file and place it in the active folder
+  // Ingest parsed file into active subject and folder
   const handleFileUploaded = (newFile) => {
     const currentSubj = subjects.find(s => s.name === activeSubject);
     const hasFolder = currentSubj?.folders.some(f => f.name === activeFolder);
@@ -194,6 +190,45 @@ export default function NotesVault() {
     setActiveFolder(targetFolderName);
     setSelectedFile(newFile);
     showToast(`Ingested "${newFile.name}" into ${targetFolderName}`, 'success');
+  };
+
+  // Direct file ingestion for top Upload button & sidebar drop
+  const fileInputRef = useRef(null);
+  const handleUploadFiles = async (fileList) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileExt = file.name.split('.').pop().toLowerCase();
+      let type = 'doc';
+      if (['pdf'].includes(fileExt)) type = 'pdf';
+      else if (['png', 'jpg', 'jpeg', 'webp', 'svg', 'gif'].includes(fileExt)) type = 'png';
+      else if (['doc', 'docx', 'txt', 'rtf', 'md'].includes(fileExt)) type = 'doc';
+
+      const { fileUrl, content } = await readFileAsync(file, type, fileExt, activeSubject, activeFolder);
+
+      const newFileObj = {
+        id: `file-${Date.now()}-${i}`,
+        name: file.name,
+        type,
+        size: `${Math.max(1, (file.size / 1024).toFixed(0))} KB`,
+        updatedAt: 'Just now',
+        tags: ['Uploaded File'],
+        fileUrl,
+        reminder: { 
+          type: 'ai', 
+          basis: 'SuperMemo-2 AI Spaced', 
+          interval: '3 days', 
+          score: 95, 
+          status: 'fresh',
+          nextDate: '2026-09-27'
+        },
+        content: content || `<h2>${file.name.replace(/\.[^/.]+$/, '')}</h2><p>Ingested academic asset indexed into <strong>${activeSubject || 'Academic'}</strong> / <strong>${activeFolder || 'General'}</strong> vault.</p>`
+      };
+
+      handleFileUploaded(newFileObj);
+    }
   };
 
   // Save note content and updated title from DocumentEditor
@@ -576,12 +611,6 @@ export default function NotesVault() {
     }
   };
 
-  // Dynamic Vault Metrics calculated from state
-  const totalFilesCount = subjects.reduce((sum, s) => sum + (s.folders || []).reduce((fSum, f) => fSum + (f.files || []).length, 0), 0);
-  const richDocsCount = subjects.reduce((sum, s) => sum + (s.folders || []).reduce((fSum, f) => fSum + (f.files || []).filter(file => file.type === 'doc' || file.type === 'docx' || file.type === 'txt').length, 0), 0);
-  const diagramsCount = subjects.reduce((sum, s) => sum + (s.folders || []).reduce((fSum, f) => fSum + (f.files || []).filter(file => file.type === 'png' || file.type === 'jpg' || file.type === 'jpeg' || file.type === 'svg').length, 0), 0);
-  const pdfsCount = subjects.reduce((sum, s) => sum + (s.folders || []).reduce((fSum, f) => fSum + (f.files || []).filter(file => file.type === 'pdf').length, 0), 0);
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 animate-fade-in relative">
       
@@ -595,137 +624,62 @@ export default function NotesVault() {
         </div>
       )}
 
-      {/* Top Breadcrumbs & Quick Revision Hub Link */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-2 border-b border-[rgb(var(--color-border))] text-xs font-mono text-[rgb(var(--color-muted))] gap-2">
-        <div className="flex items-center gap-1.5 truncate">
-          <span>REPOSITORY</span>
-          <span>/</span>
-          <span>Knowledge Vault</span>
-          <span>/</span>
-          <span className="px-1.5 py-0.5 rounded bg-[rgb(var(--color-container-high))] text-[rgb(var(--color-text))] font-semibold">🧬 {activeSubject}</span>
-          <span>/</span>
-          <span>{activeFolder || '(No Folder)'}</span>
-          <span>/</span>
-          <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-semibold truncate">{selectedFile?.name || '(Empty Folder)'}</span>
-        </div>
-
-        {/* Quick Link to Dedicated Revision Page */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            to="/revision"
-            className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#9e3c26]/10 hover:bg-[#9e3c26]/20 dark:bg-[#e26f54]/15 text-[#9e3c26] dark:text-[#ffb4a3] border border-[#9e3c26]/30 transition-all font-semibold"
-          >
-            <Brain size={13} className="animate-pulse" />
-            <span>AI Revision Hub</span>
-            <ArrowRight size={12} />
-          </Link>
-        </div>
-      </div>
-
-      {/* Main Title & Action Buttons */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+      {/* Streamlined Header & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[rgb(var(--color-border))]">
         <div>
-          <div className="text-[10px] font-mono tracking-widest uppercase text-[#9e3c26] dark:text-[#ffb4a3] font-bold mb-1">
-            ARCHITECTURAL KNOWLEDGE REPOSITORY • DOCUMENT STUDIO
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
-            Knowledge Vault & Notes Studio
+          <h1 className="text-2xl font-bold tracking-tight text-[rgb(var(--color-text))]">
+            Notes Vault
           </h1>
-          <p className="text-xs text-[rgb(var(--color-muted))] max-w-2xl mt-1 leading-relaxed">
-            Multi-modal academic archive, Word-style rich document editor, interactive PDF lecture previewer, and high-resolution diagram inspection.
+          <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
+            Knowledge base, lecture dossiers, and courseware archive.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setShowSidebar(!showSidebar)}
-            className="px-3 py-2 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] hidden md:flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="px-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-medium text-xs border border-[rgb(var(--color-border))] hidden md:flex items-center gap-1.5 transition-colors cursor-pointer"
             title={showSidebar ? 'Collapse Taxonomy Sidebar' : 'Show Taxonomy Sidebar'}
           >
-            {showSidebar ? <PanelLeftClose size={14} /> : <PanelLeftOpen size={14} />}
+            {showSidebar ? <PanelLeftClose size={13} /> : <PanelLeftOpen size={13} />}
             <span>{showSidebar ? 'Hide Tree' : 'Show Tree'}</span>
           </button>
 
-          <button
-            onClick={() => setShowNewSubjectModal(true)}
-            className="px-3 py-2 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-            title="Create a new academic discipline subject"
-          >
-            <Plus size={14} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-            <span>+ Discipline</span>
-          </button>
+          {/* Hidden File Input for Top Upload Button & Drop */}
+          <input
+            id="notes-file-uploader-input"
+            type="file"
+            multiple
+            ref={fileInputRef}
+            onChange={(e) => handleUploadFiles(e.target.files)}
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.svg,.doc,.docx,.txt,.md"
+            className="hidden"
+          />
 
           <button
-            onClick={() => handleOpenAddFolderModal()}
-            className="px-3 py-2 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-medium text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Upload PDF, DOCX, or Image file"
           >
-            <FolderPlus size={14} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-            <span>+ Folder</span>
+            <UploadCloud size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
+            <span>Upload</span>
           </button>
 
           <button
             onClick={() => handleOpenNewDocModal()}
-            className="px-3.5 py-2 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-[#9e3c26]/25 cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-[#9e3c26]/25 cursor-pointer transition-all"
           >
             <Plus size={14} />
-            <span>+ Document</span>
-          </button>
-
-          <button
-            onClick={() => setShowCreateRevModal(true)}
-            className="px-3 py-2 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-          >
-            <Clock size={14} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-            <span>Revision</span>
+            <span>New Note</span>
           </button>
 
           <button
             onClick={handleResetToDemo}
-            className="px-2.5 py-2 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] text-xs border border-[rgb(var(--color-border))] flex items-center gap-1 transition-colors cursor-pointer"
-            title="Restore sample courseware demo notes"
+            className="p-1.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))] flex items-center justify-center transition-colors cursor-pointer"
+            title="Reset to default demo courseware"
           >
             <RotateCcw size={13} />
-            <span className="hidden sm:inline">Reset Demo</span>
           </button>
-        </div>
-      </div>
-
-      {/* 4 Focused Vault Metrics (Dynamically Calculated) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
-          <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
-            <span>Archived Assets</span>
-            <Database size={13} className="text-[rgb(var(--color-muted))]" />
-          </div>
-          <div className="text-3xl font-bold font-mono text-[rgb(var(--color-text))] mt-1">{totalFilesCount}</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-secondary))] mt-1 font-medium">Across {subjects.length} Disciplines</div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
-          <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
-            <span>Rich Text Docs</span>
-            <FileText size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-          </div>
-          <div className="text-3xl font-bold font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1">{richDocsCount}</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">Word & Rich Text Formatted</div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
-          <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
-            <span>Diagrams & Media</span>
-            <Layers size={13} className="text-sky-500" />
-          </div>
-          <div className="text-3xl font-bold font-mono text-sky-600 dark:text-sky-400 mt-1">{diagramsCount + pdfsCount}</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">{diagramsCount} Schematics • {pdfsCount} PDFs</div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
-          <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
-            <span>Vault Sync Status</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
-          <div className="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">Local Vault</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">100% Vectorized & Synced</div>
         </div>
       </div>
 
@@ -734,9 +688,16 @@ export default function NotesVault() {
         showSidebar ? 'lg:grid-cols-12' : 'lg:grid-cols-1'
       }`}>
         
-        {/* Left Column: File Taxonomy & Uploader */}
+        {/* Left Column: File Taxonomy Tree (Full Height, No Bottom Clutter) */}
         {showSidebar && (
-          <div className="lg:col-span-4 space-y-4">
+          <div 
+            className="lg:col-span-4"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleUploadFiles(e.dataTransfer.files);
+            }}
+          >
             <FileTree
               subjects={subjects}
               selectedFile={selectedFile}
@@ -761,12 +722,6 @@ export default function NotesVault() {
               onDeleteFolder={handleDeleteFolder}
               onAddSubject={() => setShowNewSubjectModal(true)}
             />
-
-            <FileUploader
-              activeSubject={activeSubject}
-              activeFolder={activeFolder}
-              onFileUploaded={handleFileUploaded}
-            />
           </div>
         )}
 
@@ -780,6 +735,8 @@ export default function NotesVault() {
                 activeFolder={activeFolder}
                 forcedViewMode={editorViewMode}
                 onSave={handleSaveDocument}
+                showSidebar={showSidebar}
+                onToggleSidebar={() => setShowSidebar(prev => !prev)}
               />
             ) : (
               <div className="bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] rounded-2xl p-8 sm:p-12 text-center shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none flex flex-col items-center justify-center min-h-[580px]">
@@ -801,7 +758,7 @@ export default function NotesVault() {
                     className="px-4 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-[#9e3c26]/20 cursor-pointer transition-all"
                   >
                     <Plus size={14} />
-                    <span>+ Create Document in this Folder</span>
+                    <span>Create Document in this Folder</span>
                   </button>
                   <button
                     onClick={() => document.getElementById('notes-file-uploader-input')?.click()}
@@ -826,16 +783,6 @@ export default function NotesVault() {
         </div>
 
       </div>
-
-      {/* Create Spaced Revision Modal */}
-      <CreateRevisionModal
-        isOpen={showCreateRevModal}
-        onClose={() => setShowCreateRevModal(false)}
-        defaultSubject={activeSubject}
-        onCreate={(newItem) => {
-          showToast(`Scheduled "${newItem.topic}" for Revision Hub!`, 'success');
-        }}
-      />
 
       {/* Spaced Revision Reminder Modal */}
       {showReminderModal && (

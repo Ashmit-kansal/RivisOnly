@@ -76,11 +76,10 @@ export default function FileTree({
       const folderNameMatches = q ? folder.name.toLowerCase().includes(q) : false;
 
       const matchingFiles = folder.files.filter(file => {
-        // Tag filter
-        if (activeFilter === '#PDFs' && file.type !== 'pdf') return false;
-        if (activeFilter === '#WebDocs' && file.type !== 'doc' && file.type !== 'docx' && file.type !== 'txt') return false;
-        if (activeFilter === '#Decay-Critical' && file.reminder?.status !== 'decaying') return false;
-        if (activeFilter === '#Exams-W08' && !file.tags?.some(t => t.toLowerCase().includes('exam') || t.toLowerCase().includes('high'))) return false;
+        // File type filter
+        if (activeFilter === 'PDFs' && file.type !== 'pdf') return false;
+        if (activeFilter === 'Notes' && file.type !== 'doc' && file.type !== 'docx' && file.type !== 'txt' && file.type !== 'md') return false;
+        if (activeFilter === 'Media' && !['png', 'jpg', 'jpeg', 'webp', 'svg'].includes(file.type)) return false;
 
         // If subject or folder name matches and filter is 'All Files', keep file
         if (!q) return true;
@@ -172,7 +171,7 @@ export default function FileTree({
         </div>
 
         <div className="flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono py-1">
-          {['All Files', '#Decay-Critical', '#Exams-W08', '#PDFs', '#WebDocs'].map(filter => (
+          {['All', 'Notes', 'PDFs', 'Media'].map(filter => (
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
@@ -190,17 +189,6 @@ export default function FileTree({
 
       {/* Root Subjects Tree List */}
       <div className="flex-1 overflow-y-auto space-y-2 text-xs pr-1">
-        
-        <div className="flex items-center justify-between text-[11px] font-mono text-[rgb(var(--color-muted))] uppercase px-1">
-          <span className="font-semibold">Active Root Subjects</span>
-          <button
-            onClick={() => onAddFolder && onAddFolder()}
-            className="flex items-center gap-1 text-[#9e3c26] dark:text-[#ffb4a3] hover:underline cursor-pointer lowercase font-medium"
-          >
-            <Plus size={12} />
-            <span>+ add folder</span>
-          </button>
-        </div>
 
         {filteredSubjects.length === 0 ? (
           <div className="p-6 text-center text-xs text-[rgb(var(--color-muted))] space-y-1">
@@ -244,14 +232,6 @@ export default function FileTree({
                   <span className="text-[10px] font-mono text-[rgb(var(--color-muted))]">
                     {subject.folders.reduce((acc, f) => acc + f.files.length, 0)} items
                   </span>
-                  
-                  <button
-                    onClick={() => onOpenReminderModal && onOpenReminderModal({ id: subject.id, name: subject.name, subject: subject.name })}
-                    className="p-1 text-[rgb(var(--color-muted))] hover:text-[#9e3c26] rounded-md transition-colors cursor-pointer"
-                    title="Set Spaced Revision for this Subject"
-                  >
-                    <Clock size={12} />
-                  </button>
                 </div>
               </div>
 
@@ -296,13 +276,6 @@ export default function FileTree({
                               title={`Create Document in ${folder.name}`}
                             >
                               <Plus size={12} />
-                            </button>
-                            <button
-                              onClick={() => onOpenReminderModal && onOpenReminderModal({ id: folder.id, name: folder.name, subject: subject.name })}
-                              className="p-1 text-[rgb(var(--color-muted))] hover:text-[#9e3c26] transition-colors rounded cursor-pointer"
-                              title="Set Spaced Revision for Folder"
-                            >
-                              <Clock size={11} />
                             </button>
                             {onDeleteFolder && (
                               <button
@@ -410,7 +383,7 @@ export default function FileTree({
           className="flex-1 py-2 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[#9e3c26] hover:text-white dark:hover:bg-[#e26f54] text-xs font-semibold text-[rgb(var(--color-text))] flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-[rgb(var(--color-border))]"
         >
           <FilePlus size={13} />
-          <span>+ Create Web Doc Note</span>
+          <span>Create Web Doc Note</span>
         </button>
       </div>
 

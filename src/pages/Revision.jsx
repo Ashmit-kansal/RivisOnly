@@ -189,7 +189,7 @@ export default function Revision() {
             className="px-4 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-[#9e3c26]/25 transition-all cursor-pointer"
           >
             <Plus size={15} />
-            <span>+ Create Revision</span>
+            <span>Create Revision</span>
           </button>
 
           <Link
@@ -685,7 +685,7 @@ export default function Revision() {
                     className="w-full py-1.5 px-2.5 rounded-lg bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-text))] text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                   >
                     <Plus size={12} />
-                    <span>+ Schedule a Topic for {currentStage.day}</span>
+                    <span>Schedule a Topic for {currentStage.day}</span>
                   </button>
                 </div>
 

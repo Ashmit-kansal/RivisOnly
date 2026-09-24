@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, 
   Download, Printer, Maximize2, Minimize2, Search, FileText, 
-  Sparkles, Layers, BookOpen, ExternalLink, Check
+  Sparkles, Layers, BookOpen, ExternalLink, Check, PanelLeftOpen
 } from 'lucide-react';
 
-export default function PdfPreviewer({ activeFile, activeSubject, activeFolder }) {
+export default function PdfPreviewer({ 
+  activeFile, 
+  activeSubject, 
+  activeFolder,
+  showSidebar,
+  onToggleSidebar 
+}) {
   const [currentPage, setCurrentPage] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,6 +120,17 @@ export default function PdfPreviewer({ activeFile, activeSubject, activeFolder }
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  // Keyboard shortcut: Press Escape to collapse fullscreen/expanded view
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
   return (
     <div className={`bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] rounded-2xl shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none flex flex-col h-full overflow-hidden ${
       isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''
@@ -122,8 +139,20 @@ export default function PdfPreviewer({ activeFile, activeSubject, activeFolder }
       {/* Top Document Reader Bar */}
       <div className="px-4 py-2.5 border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-container-low))] flex flex-wrap items-center justify-between gap-2.5">
         
-        {/* Left: Document Badge & Page Counter */}
-        <div className="flex items-center gap-3">
+        {/* Left: Document Badge, Page Counter & Sidebar Toggle */}
+        <div className="flex items-center gap-2.5">
+          {/* Quick toggle to restore sidebar if hidden in normal view */}
+          {onToggleSidebar && !showSidebar && !isFullscreen && (
+            <button
+              onClick={onToggleSidebar}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[rgb(var(--color-card))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-xs font-mono text-[rgb(var(--color-text))] transition-colors cursor-pointer"
+              title="Restore Taxonomy Sidebar Tree"
+            >
+              <PanelLeftOpen size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
+              <span className="hidden sm:inline">Show Tree</span>
+            </button>
+          )}
+
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-mono font-bold border border-red-500/20">
             <FileText size={13} />
             <span>PDF READER</span>
@@ -229,15 +258,41 @@ export default function PdfPreviewer({ activeFile, activeSubject, activeFolder }
             <Download size={13} />
           </button>
 
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-xl bg-[rgb(var(--color-card))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors cursor-pointer"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-          </button>
+          {/* Expand / Collapse Button with clear label */}
+          {isFullscreen ? (
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs shadow-md shadow-[#9e3c26]/20 transition-all cursor-pointer animate-in fade-in"
+              title="Collapse to Previous Position (Esc)"
+            >
+              <Minimize2 size={13} />
+              <span>Collapse</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[rgb(var(--color-card))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] text-xs font-mono transition-colors cursor-pointer"
+              title="Expand to Fullscreen"
+            >
+              <Maximize2 size={13} />
+              <span className="hidden sm:inline">Expand</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Floating Quick-Collapse Badge in Fullscreen Mode */}
+      {isFullscreen && (
+        <button
+          onClick={() => setIsFullscreen(false)}
+          className="fixed top-3 right-4 z-[60] flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 hover:bg-neutral-900 text-white border border-white/20 text-xs font-semibold shadow-2xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer"
+          title="Collapse to previous position (Esc)"
+        >
+          <Minimize2 size={13} className="text-[#ffb4a3]" />
+          <span>Collapse View</span>
+          <kbd className="px-1.5 py-0.2 rounded bg-white/20 text-[10px] font-mono text-white/80">Esc</kbd>
+        </button>
+      )}
 
       {/* Main Document Workspace */}
       <div className="flex-1 flex overflow-hidden bg-[rgb(var(--color-container-low))]/40">
