@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DuelModal from './DuelModal';
 import Modal from '../../components/ui/Modal';
+import { useAuth } from '../../context/AuthContext';
 import { 
   Users, Swords, LogOut, Clock, Send, Sparkles, 
   Flame, CheckCircle2, AlertTriangle, ShieldAlert, 
@@ -8,6 +9,9 @@ import {
 } from 'lucide-react';
 
 export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) {
+  const { user } = useAuth();
+  const youName = user ? `${user.name} (You)` : 'Guest Scholar (You)';
+
   // Timer State (Drift-free timestamp calculation)
   const totalSeconds = (committedMinutes || 25) * 60;
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
@@ -20,10 +24,10 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
     const existing = room.members || [];
     const you = {
       id: 'me',
-      name: 'Arjun Sharma (You)',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      level: 15,
-      school: 'Current Scholar',
+      name: youName,
+      avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      level: user?.level ?? 1,
+      school: user?.title || 'Scholar',
       studyTime: 45,
       status: 'Focusing',
       isYou: true
@@ -93,7 +97,7 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
 
     const newMsg = {
       id: `msg-${Date.now()}`,
-      sender: 'Arjun Sharma (You)',
+      sender: youName,
       text: trimmed,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isSystem: false,
@@ -108,7 +112,7 @@ export default function ActiveStudyRoom({ room, committedMinutes, onExitRoom }) 
   const handleSendReaction = (emoji) => {
     const reactionMsg = {
       id: `reaction-${Date.now()}`,
-      sender: 'Arjun Sharma (You)',
+      sender: youName,
       text: `${emoji} sent a focus reaction!`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isSystem: false,

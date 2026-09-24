@@ -4,10 +4,12 @@ import RoomCommitmentView from '../features/rooms/RoomCommitmentView';
 import ActiveStudyRoom from '../features/rooms/ActiveStudyRoom';
 import DuelModal from '../features/rooms/DuelModal';
 import Modal from '../components/ui/Modal';
+import { useAuth } from '../context/AuthContext';
 import { mockRooms } from '../data/mockRooms';
 import { Users, Plus, Search, Swords, Lock } from 'lucide-react';
 
 export default function StudyRooms() {
+  const { user } = useAuth();
   const [rooms, setRooms] = useState(mockRooms);
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,10 +79,10 @@ export default function StudyRooms() {
       members: [
         {
           id: 'me',
-          name: 'Arjun Sharma (You)',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          level: 14,
-          school: 'Scholar',
+          name: user ? `${user.name} (You)` : 'Guest Scholar (You)',
+          avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          level: user?.level ?? 1,
+          school: user?.title || 'Scholar',
           studyTime: 45,
           status: 'Studying',
           isFriend: true

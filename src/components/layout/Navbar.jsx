@@ -98,11 +98,17 @@ export default function Navbar() {
                 className="flex items-center gap-2.5 p-1 rounded-full bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] hover:bg-[rgb(var(--color-container))] transition-colors cursor-pointer"
               >
                 <div className="relative">
-                  <img
-                    src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-                    alt="Scholar profile"
-                    className="w-7 h-7 rounded-full object-cover border border-[rgb(var(--color-border))]"
-                  />
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name || 'Scholar'}
+                      className="w-7 h-7 rounded-full object-cover border border-[rgb(var(--color-border))]"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[rgb(var(--color-primary))] to-orange-500 text-white font-bold text-xs flex items-center justify-center uppercase shadow-xs">
+                      {user.name ? user.name.trim().charAt(0) : 'S'}
+                    </div>
+                  )}
                   <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-[rgb(var(--color-card))]" />
                 </div>
                 <div className="hidden lg:block text-left pr-1.5">
@@ -110,7 +116,7 @@ export default function Navbar() {
                     Focus Mode Active
                   </div>
                   <div className="text-[10px] font-mono text-[rgb(var(--color-muted))]">
-                    Lv. {user.level || 14} {user.title || 'Scholar'}
+                    Lv. {user.level ?? 1} {user.title || 'Scholar'}
                   </div>
                 </div>
                 <ChevronDown size={13} className="text-[rgb(var(--color-muted))] hidden lg:inline mr-1" />
@@ -123,7 +129,7 @@ export default function Navbar() {
                     <p className="text-[11px] text-[rgb(var(--color-muted))] truncate">{user.email}</p>
                     <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] text-[10px] font-mono font-medium">
                       <Sparkles size={11} />
-                      <span>Elo: {user.eloRating || 1840} • Streak: {user.streak || 19}d</span>
+                      <span>Elo: {user.eloRating ?? 1200} • Streak: {user.streak ?? 1}d</span>
                     </div>
                   </div>
                   <div className="py-1">

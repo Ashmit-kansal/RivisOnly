@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../../components/ui/Modal';
 import ProgressBar from '../../components/ui/ProgressBar';
+import { useAuth } from '../../context/AuthContext';
 import { mockAIQuizBank } from '../../data/mockRevision';
 import { 
   Swords, CheckCircle2, Clock, Sparkles, Trophy, 
@@ -27,6 +28,7 @@ export default function DuelModal({
   isMatchmaking = false,
   onDuelComplete 
 }) {
+  const { user } = useAuth();
   // Opponent State
   const [opponentData, setOpponentData] = useState(
     opponent || SCHOLAR_POOL[Math.floor(Math.random() * SCHOLAR_POOL.length)]
@@ -279,8 +281,8 @@ export default function DuelModal({
                 YOU
               </div>
               <div>
-                <div className="font-bold text-sm text-[rgb(var(--color-text))]">Arjun Sharma</div>
-                <div className="text-[11px] font-mono text-[rgb(var(--color-muted))]">Elo 1820 • Lv. 15</div>
+                <div className="font-bold text-sm text-[rgb(var(--color-text))]">{user?.name || 'You'}</div>
+                <div className="text-[11px] font-mono text-[rgb(var(--color-muted))]">Elo {user?.eloRating ?? 1200} • Lv. {user?.level ?? 1}</div>
               </div>
             </div>
 
