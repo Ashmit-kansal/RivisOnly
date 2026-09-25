@@ -6,7 +6,7 @@ export const lofiTracks = [
     duration: '2:45',
     bpm: 60,
     mood: 'Deep Analytical',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 2,
@@ -15,7 +15,7 @@ export const lofiTracks = [
     duration: '2:28',
     bpm: 64,
     mood: 'Morning Flow',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 3,
@@ -24,7 +24,7 @@ export const lofiTracks = [
     duration: '2:53',
     bpm: 60,
     mood: 'Gentle Thought',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 4,
@@ -33,7 +33,7 @@ export const lofiTracks = [
     duration: '2:16',
     bpm: 56,
     mood: 'Mathematical Flow',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 5,
@@ -42,7 +42,7 @@ export const lofiTracks = [
     duration: '3:11',
     bpm: 60,
     mood: 'Deep Immersion',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 6,
@@ -51,7 +51,7 @@ export const lofiTracks = [
     duration: '2:35',
     bpm: 63,
     mood: 'Quiet Solitude',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 7,
@@ -60,7 +60,7 @@ export const lofiTracks = [
     duration: '2:43',
     bpm: 59,
     mood: 'Serene Recall',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 8,
@@ -69,7 +69,7 @@ export const lofiTracks = [
     duration: '2:10',
     bpm: 61,
     mood: 'Soft Focus',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 9,
@@ -78,7 +78,7 @@ export const lofiTracks = [
     duration: '2:32',
     bpm: 58,
     mood: 'Relaxed Memory',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 10,
@@ -87,7 +87,7 @@ export const lofiTracks = [
     duration: '2:50',
     bpm: 60,
     mood: 'Smooth Study',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 11,
@@ -96,7 +96,7 @@ export const lofiTracks = [
     duration: '3:02',
     bpm: 64,
     mood: 'Chill Coding',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 12,
@@ -105,7 +105,7 @@ export const lofiTracks = [
     duration: '2:32',
     bpm: 62,
     mood: 'Night Owl Study',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 13,
@@ -114,7 +114,7 @@ export const lofiTracks = [
     duration: '2:15',
     bpm: 60,
     mood: 'Tape Nostalgia',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 14,
@@ -123,7 +123,7 @@ export const lofiTracks = [
     duration: '2:40',
     bpm: 65,
     mood: 'Mellow Groove',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   },
   {
     id: 15,
@@ -132,7 +132,7 @@ export const lofiTracks = [
     duration: '2:40',
     bpm: 54,
     mood: 'Deep Consolidation',
-    url: '/audio/lofi-placeholder.wav'
+    url: '/audio/lofi-placeholder.mp3'
   }
 ];
 
