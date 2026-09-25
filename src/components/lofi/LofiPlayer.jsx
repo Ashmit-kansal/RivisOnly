@@ -195,10 +195,10 @@ export default function LofiPlayer() {
             <button
               onClick={() => setShowTrackList(!showTrackList)}
               className="flex items-center gap-1.5 text-xs font-mono text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] px-2.5 py-1 rounded-lg hover:bg-[rgb(var(--color-container-low))] transition-colors cursor-pointer"
-              title="Browse 20 Royalty-Free Tracks"
+              title={`Browse ${lofiTracks.length} Royalty-Free Tracks`}
             >
               <ListMusic size={14} />
-              <span>{showTrackList ? 'Hide 20' : '20 Tracks'}</span>
+              <span>{showTrackList ? `Hide (${lofiTracks.length})` : `${lofiTracks.length} Tracks`}</span>
             </button>
           </div>
 
