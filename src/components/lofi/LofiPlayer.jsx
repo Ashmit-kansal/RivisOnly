@@ -3,7 +3,7 @@ import { lofiTracks, ambientAudio } from '../../data/lofiTracks';
 import { 
   Play, Pause, SkipBack, SkipForward, 
   Volume2, VolumeX, ListMusic, Music, 
-  ChevronDown, Disc3
+  ChevronDown, Disc3, CloudRain
 } from 'lucide-react';
 
 export default function LofiPlayer() {
@@ -59,20 +59,20 @@ export default function LofiPlayer() {
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end">
       
-      {/* 1. COLLAPSED STATE: FLOATING MUSIC ICON */}
+      {/* 1. COLLAPSED STATE: FLOATING MUSIC/RAIN ICON */}
       {!isExpanded && (
         <button
           onClick={() => setIsExpanded(true)}
           className="group relative flex items-center justify-center w-14 h-14 rounded-2xl bg-[rgb(var(--color-card))]/90 dark:bg-[rgb(var(--color-card))]/90 backdrop-blur-xl border border-[rgb(var(--color-border))] shadow-2xl hover:border-[rgb(var(--color-primary))]/50 hover:shadow-[rgb(var(--color-primary))]/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-          title={isPlaying ? `Playing: ${currentTrack.title}` : "Open Lo-Fi Radio"}
-          aria-label="Open Lo-Fi Radio"
+          title={isPlaying ? `Playing: ${currentTrack.title}` : "Open Rain & Lo-Fi Player"}
+          aria-label="Open Rain & Lo-Fi Player"
         >
           {/* Pulsating ambient aura when playing */}
           {isPlaying && (
             <span className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[rgb(var(--color-primary))]/30 to-indigo-500/20 blur-sm animate-pulse -z-10" />
           )}
 
-          {/* Equalizer animation when playing, else static Music icon */}
+          {/* Equalizer animation when playing, else CloudRain icon */}
           {isPlaying ? (
             <div className="flex items-end gap-1 h-5">
               <span className="w-1 bg-[rgb(var(--color-primary))] rounded-full animate-bounce [animation-duration:500ms]" style={{ height: '60%' }} />
@@ -81,7 +81,7 @@ export default function LofiPlayer() {
               <span className="w-1 bg-[rgb(var(--color-primary))] rounded-full animate-bounce [animation-duration:700ms]" style={{ height: '80%' }} />
             </div>
           ) : (
-            <Music size={22} className="text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-primary))] transition-colors" />
+            <CloudRain size={22} className="text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-primary))] transition-colors" />
           )}
 
           {/* Mini Playing Status Dot */}
@@ -91,13 +91,13 @@ export default function LofiPlayer() {
 
           {/* Hover Tooltip Pill */}
           <span className="absolute right-16 px-3 py-1.5 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-lg text-xs font-medium text-[rgb(var(--color-text))] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 hidden sm:flex items-center gap-2">
-            <span className="font-mono text-[11px] text-[rgb(var(--color-primary))] font-bold">LO-FI</span>
-            <span>{isPlaying ? currentTrack.title : 'Play Lo-Fi Music'}</span>
+            <span className="font-mono text-[11px] text-[rgb(var(--color-primary))] font-bold">RAIN</span>
+            <span>{isPlaying ? currentTrack.title : 'Play Simple Rain'}</span>
           </span>
         </button>
       )}
 
-      {/* 2. EXPANDED STATE: FLOATING LO-FI PLAYER CARD */}
+      {/* 2. EXPANDED STATE: FLOATING LO-FI & RAIN CARD */}
       {isExpanded && (
         <div className="w-[360px] max-w-[calc(100vw-2.5rem)] rounded-3xl bg-[rgb(var(--color-card))]/95 backdrop-blur-2xl border border-[rgb(var(--color-border))] shadow-2xl p-5 space-y-4 animate-fade-in-up text-[rgb(var(--color-text))]">
           
@@ -109,10 +109,10 @@ export default function LofiPlayer() {
               </div>
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-widest text-[rgb(var(--color-primary))] font-bold leading-tight">
-                  RIVISONLY LO-FI RADIO
+                  RIVISONLY LO-FI & RAIN
                 </div>
                 <div className="text-[11px] text-[rgb(var(--color-muted))] font-mono">
-                  Track {currentTrackIndex + 1} of {lofiTracks.length} • Royalty-Free
+                  Track {currentTrackIndex + 1} of {lofiTracks.length} • Ambient Rain
                 </div>
               </div>
             </div>
@@ -124,7 +124,7 @@ export default function LofiPlayer() {
                 setShowTrackList(false);
               }}
               className="w-8 h-8 rounded-xl flex items-center justify-center text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-container-low))] transition-colors cursor-pointer"
-              title="Minimize Lo-Fi Player"
+              title="Minimize Player"
               aria-label="Minimize"
             >
               <ChevronDown size={18} />
@@ -157,7 +157,7 @@ export default function LofiPlayer() {
             <button
               onClick={togglePlay}
               className="w-12 h-12 rounded-2xl bg-[rgb(var(--color-primary))] hover:brightness-105 text-white flex items-center justify-center shadow-lg shadow-[rgb(var(--color-primary))]/30 active:scale-95 transition-all cursor-pointer"
-              title={isPlaying ? "Pause" : "Play Lo-Fi"}
+              title={isPlaying ? "Pause" : "Play Rain Sound"}
             >
               {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
             </button>
@@ -195,7 +195,7 @@ export default function LofiPlayer() {
             <button
               onClick={() => setShowTrackList(!showTrackList)}
               className="flex items-center gap-1.5 text-xs font-mono text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] px-2.5 py-1 rounded-lg hover:bg-[rgb(var(--color-container-low))] transition-colors cursor-pointer"
-              title={`Browse ${lofiTracks.length} Royalty-Free Tracks`}
+              title={`Browse ${lofiTracks.length} Rain Tracks`}
             >
               <ListMusic size={14} />
               <span>{showTrackList ? `Hide (${lofiTracks.length})` : `${lofiTracks.length} Tracks`}</span>

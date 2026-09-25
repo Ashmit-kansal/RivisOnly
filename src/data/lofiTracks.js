@@ -1,138 +1,138 @@
 export const lofiTracks = [
   {
     id: 1,
-    title: 'Midnight Study',
+    title: 'Simple Rain Sound',
     artist: 'Rivis Ambient',
-    duration: '2:45',
+    duration: '1:44',
     bpm: 60,
-    mood: 'Deep Analytical',
-    url: '/audio/lofi-placeholder.mp3'
+    mood: 'Gentle Rainfall',
+    url: '/audio/rain.mp3'
   },
   {
     id: 2,
-    title: 'Late Breakfast',
+    title: 'Gentle Rain on Window',
     artist: 'Study Beats',
-    duration: '2:28',
-    bpm: 64,
+    duration: '2:15',
+    bpm: 60,
     mood: 'Morning Flow',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 3,
-    title: 'Rainy Sunday',
+    title: 'Rainy Sunday Ambience',
     artist: 'Coffee House',
-    duration: '2:53',
-    bpm: 60,
+    duration: '2:30',
+    bpm: 58,
     mood: 'Gentle Thought',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 4,
-    title: 'Campus Coffee',
+    title: 'Campus Rain Shower',
     artist: 'Lofi Library',
     duration: '2:16',
     bpm: 56,
     mood: 'Mathematical Flow',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 5,
-    title: 'Full Moon',
+    title: 'Midnight Rain Focus',
     artist: 'Night Owl Chill',
     duration: '3:11',
     bpm: 60,
     mood: 'Deep Immersion',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 6,
-    title: 'Quiet Solitude',
+    title: 'Quiet Rain Solitude',
     artist: 'Aura Lofi',
     duration: '2:35',
-    bpm: 63,
+    bpm: 60,
     mood: 'Quiet Solitude',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 7,
-    title: 'Gentle Rain',
+    title: 'Peaceful Soft Rainfall',
     artist: 'Analog Dreams',
     duration: '2:43',
     bpm: 59,
     mood: 'Serene Recall',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 8,
-    title: 'Acoustic Morning',
+    title: 'Acoustic Rain Morning',
     artist: 'Study Beats',
     duration: '2:10',
     bpm: 61,
     mood: 'Soft Focus',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 9,
-    title: 'Frappe Chill',
+    title: 'Café Rain Chill',
     artist: 'Coffee House',
     duration: '2:32',
     bpm: 58,
     mood: 'Relaxed Memory',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 10,
-    title: 'Smooth Study',
+    title: 'Smooth Study Rainfall',
     artist: 'Rivis Ambient',
     duration: '2:50',
     bpm: 60,
     mood: 'Smooth Study',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 11,
-    title: 'Saturday Vibe',
+    title: 'Weekend Rain Flow',
     artist: 'Weekend Beats',
     duration: '3:02',
-    bpm: 64,
+    bpm: 60,
     mood: 'Chill Coding',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 12,
-    title: 'Night Highway',
+    title: 'Night Rain Highway',
     artist: 'Night Owl Chill',
     duration: '2:32',
     bpm: 62,
     mood: 'Night Owl Study',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 13,
-    title: 'End of Tape',
+    title: 'Lo-Fi Rain Nostalgia',
     artist: 'Analog Dreams',
     duration: '2:15',
     bpm: 60,
     mood: 'Tape Nostalgia',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 14,
-    title: 'Sweet Summer Chill',
+    title: 'Summer Rain Garden',
     artist: 'Lofi Garden',
     duration: '2:40',
-    bpm: 65,
+    bpm: 60,
     mood: 'Mellow Groove',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   },
   {
     id: 15,
-    title: 'Warp Flow',
+    title: 'Deep Focus Cloudburst',
     artist: 'Aura Lofi',
     duration: '2:40',
     bpm: 54,
     mood: 'Deep Consolidation',
-    url: '/audio/lofi-placeholder.mp3'
+    url: '/audio/rain.mp3'
   }
 ];
 
@@ -146,6 +146,7 @@ class LofiAudioEngine {
     if (this.audio) {
       this.audio.volume = this.volume;
       this.audio.preload = 'auto';
+      this.audio.loop = true;
       this.audio.addEventListener('ended', () => {
         if (this.onTrackEndCallback) {
           this.onTrackEndCallback();
