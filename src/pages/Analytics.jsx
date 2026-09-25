@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  StatsCards, VolumeAndCircadian, RetentionCurveSection, 
-  ThirtyDayFocusBarChart, SynchronousArenaTable 
+import {
+  StatsCards,
+  SubjectVolumeSection,
+  RetentionCurveSection,
+  CircadianRhythmSection,
+  ThirtyDayFocusBarChart,
+  SynchronousArenaTable
 } from '../features/analytics/AnalyticsComponents';
 import { Download, Sparkles, ChevronDown, Check } from 'lucide-react';
 import { mockStats } from '../data/mockStats';
@@ -54,10 +58,10 @@ Keep up the consistent reviews to maximize long-term retention!
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8 animate-fade-in">
-      
-      {/* Top Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8 animate-fade-in">
+
+      {/* Top Header & Analytics Controls */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-2 border-b border-[rgb(var(--color-border))]/60">
         <div>
           <div className="text-[10px] font-mono tracking-widest uppercase text-[rgb(var(--color-muted))] flex items-center gap-1.5 mb-1 font-semibold">
             <span>STUDY ANALYTICS & INSIGHTS</span>
@@ -67,26 +71,28 @@ Keep up the consistent reviews to maximize long-term retention!
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
             Study Performance & Learning Progress
           </h1>
-          <div className="mt-1">
+          <div className="mt-1.5 flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-text))]">
               Rank: Top 2% of Learners Globally
+            </span>
+            <span className="text-[11px] font-mono text-[rgb(var(--color-muted))]">
+              37 topics active across 4 courses
             </span>
           </div>
         </div>
 
         {/* Controls: Period filters, Subject selector, Export button */}
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs font-mono">
           {/* Period selector */}
           <div className="inline-flex p-1 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] shadow-inner">
             {['7D', '30D', '90D', 'ALL'].map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                  period === p
+                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${period === p
                     ? 'bg-[rgb(var(--color-card))] font-bold text-[#9e3c26] dark:text-[#ffb4a3] shadow-xs'
                     : 'text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))]'
-                }`}
+                  }`}
               >
                 {p}
               </button>
@@ -98,58 +104,56 @@ Keep up the consistent reviews to maximize long-term retention!
             <select
               value={activeSubjectFilter}
               onChange={(e) => setActiveSubjectFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26] appearance-none pr-8 cursor-pointer shadow-xs"
+              className="px-3.5 py-2 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26] appearance-none pr-8 cursor-pointer shadow-xs"
             >
-              <option value="All">All Subjects (4 Active)</option>
+              <option value="All">All Courses (4 Active)</option>
               <option value="Organic Chemistry II">Organic Chemistry II</option>
               <option value="Linear Algebra">Linear Algebra</option>
               <option value="Cognitive Neuroscience">Cognitive Neuroscience</option>
               <option value="Macroeconomics">Macroeconomics</option>
             </select>
-            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[rgb(var(--color-muted))]" />
+            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[rgb(var(--color-muted))]" />
           </div>
 
           {/* Export Report button */}
           <button
             onClick={handleExportReport}
-            className={`px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 shadow-sm transition-all cursor-pointer ${
-              exported 
-                ? 'bg-emerald-600 text-white' 
+            className={`px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 shadow-sm transition-all cursor-pointer ${exported
+                ? 'bg-emerald-600 text-white'
                 : 'bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white shadow-[#9e3c26]/20'
-            }`}
+              }`}
           >
-            {exported ? <Check size={13} /> : <Download size={13} />}
+            {exported ? <Check size={14} /> : <Download size={14} />}
             <span>{exported ? 'Report Downloaded!' : 'Export Report'}</span>
           </button>
         </div>
       </div>
 
-      {/* 4 Stat Cards */}
+      {/* 1. 4 Key Performance Indicator Cards */}
       <StatsCards period={period} selectedSubject={activeSubjectFilter} />
 
-      {/* Time Allocation & Retention Curve Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-6">
-          <VolumeAndCircadian 
-            selectedSubject={activeSubjectFilter} 
-            onSelectSubject={setActiveSubjectFilter} 
-          />
-        </div>
-        <div className="lg:col-span-6">
-          <RetentionCurveSection selectedSubject={activeSubjectFilter} />
-        </div>
-      </div>
+      {/* 2. Course Time Allocation & Mastery Breakdown */}
+      <SubjectVolumeSection
+        selectedSubject={activeSubjectFilter}
+        onSelectSubject={setActiveSubjectFilter}
+      />
 
-      {/* Daily Focus Minutes & Consistency */}
+      {/* 3. Memory Health & Spaced Retention Curve Section */}
+      <RetentionCurveSection selectedSubject={activeSubjectFilter} />
+
+      {/* 4. Daily Peak Focus Windows & 24H Cognitive Energy Bar Chart */}
+      <CircadianRhythmSection selectedSubject={activeSubjectFilter} />
+
+      {/* 5. Daily Focus Minutes & Consistency Tracker */}
       <ThirtyDayFocusBarChart period={period} />
 
-      {/* Head-to-Head Duels & Subject Accuracy */}
+      {/* 6. Live Quiz Duels Arena & Subject Accuracy */}
       <SynchronousArenaTable selectedSubject={activeSubjectFilter} />
 
-      {/* Bottom Personalized Study Tip Alert Banner */}
+      {/* 7. Bottom Personalized Smart Study Recommendation Alert Banner */}
       {!alertDismissed && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-[#9e3c26]/10 via-[rgb(var(--color-container-low))] to-transparent border border-[#9e3c26]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#9e3c26]/10 via-[rgb(var(--color-container-low))] to-transparent border border-[#9e3c26]/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-[#9e3c26] dark:bg-[#e26f54] text-white flex items-center justify-center shrink-0 shadow-sm">
               <Sparkles size={20} />
             </div>
@@ -157,13 +161,13 @@ Keep up the consistent reviews to maximize long-term retention!
               <h3 className="font-bold text-sm text-[rgb(var(--color-text))]">
                 Smart Study Recommendation
               </h3>
-              <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
+              <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5 leading-relaxed">
                 Recommended focus adjustment: Allocate +25 minutes to Linear Algebra (Orthogonal Projections) before Friday's review deadline.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto justify-end">
             <button
               onClick={() => setAlertDismissed(true)}
               className="px-3.5 py-1.5 rounded-xl border border-[rgb(var(--color-border))] text-xs font-medium text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-container))] transition-colors cursor-pointer bg-[rgb(var(--color-card))]"

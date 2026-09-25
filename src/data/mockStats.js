@@ -50,6 +50,53 @@ export const mockStats = {
     { day: 'Sat', count: 14, isHeavy: false, subjects: '14 Lin Alg Review', estMinutes: 8 },
     { day: 'Sun', count: 16, isHeavy: false, subjects: '16 Weekly Recap Cards', estMinutes: 9 }
   ],
+  memoryHealth: {
+    overallRate: 91.4,
+    totalCards: 37,
+    activeSubjects: 4,
+    recentTestsCount: 40,
+    statusBreakdown: {
+      mastered: {
+        count: 24,
+        percent: 65,
+        label: 'Permanent Memory (85–100%)',
+        description: 'Synaptic connections locked in. Safe from forgetting for 30+ days.',
+        examples: ['Eigenvalues & Diagonalization', 'CIP Stereochemistry Rules', 'Fourier Transform NMR']
+      },
+      stable: {
+        count: 8,
+        percent: 22,
+        label: 'Stable Recall (70–84%)',
+        description: 'Good recall. Review scheduled in 3–5 days to maintain strength.',
+        examples: ['IS-LM Macroeconomic Equilibrium', 'Meisenheimer Complex Resonance']
+      },
+      needsReview: {
+        count: 5,
+        percent: 13,
+        label: 'High Forgetting Risk (<70%)',
+        description: 'Forgetting probability is high. Take a 3-minute quiz today to lock them back in!',
+        examples: ['SNAr Reaction Kinetics (62%)', 'Hippocampal LTP Induction (54%)', 'Orthogonal Projection Proofs (65%)']
+      }
+    }
+  },
+  hourlyFocusCurve: [
+    { time: '12 AM', hour: '00:00', focus: 0, period: 'Night', activity: 'Sleep & neural memory replay' },
+    { time: '3 AM', hour: '03:00', focus: 0, period: 'Night', activity: 'Deep Sleep & cellular recharge' },
+    { time: '6 AM', hour: '06:00', focus: 72, period: 'Morning', activity: 'Morning reading & skimming notes' },
+    { time: '8 AM', hour: '08:00', focus: 86, period: 'Morning', activity: 'Quick flashcard warm-up sprint' },
+    { time: '9 AM', hour: '09:00', focus: 96, period: 'Morning', isPeak: true, activity: 'Morning Peak: Reaction Mechanisms' },
+    { time: '10 AM', hour: '10:00', focus: 98, period: 'Morning', isPeak: true, activity: 'Highest clarity: Proofs & derivations' },
+    { time: '11 AM', hour: '11:00', focus: 95, period: 'Morning', isPeak: true, activity: 'Hard synthesis problem sets' },
+    { time: '12 PM', hour: '12:00', focus: 68, period: 'Afternoon', activity: 'Midday recharge & lunch break' },
+    { time: '2 PM', hour: '14:00', focus: 82, period: 'Afternoon', activity: 'Applied practice & worksheet tasks' },
+    { time: '3 PM', hour: '15:00', focus: 85, period: 'Afternoon', activity: 'Lab notes & practice exam questions' },
+    { time: '5 PM', hour: '17:00', focus: 83, period: 'Afternoon', activity: 'Virtual room study with Lofi' },
+    { time: '6 PM', hour: '18:00', focus: 70, period: 'Evening', activity: 'Dinner & evening recharge' },
+    { time: '8 PM', hour: '20:00', focus: 94, period: 'Evening', isPeak: true, activity: 'Evening Peak: 1v1 Live Quiz Duels' },
+    { time: '9 PM', hour: '21:00', focus: 95, period: 'Evening', isPeak: true, activity: 'High-speed active recall & duels' },
+    { time: '10 PM', hour: '22:00', focus: 92, period: 'Evening', isPeak: true, activity: 'Spaced repetition queue clearance' },
+    { time: '11 PM', hour: '23:00', focus: 68, period: 'Night', activity: 'Wind-down reading & sleep prep' },
+  ],
   daySegments: [
     {
       id: 'morning',
