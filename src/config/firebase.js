@@ -13,7 +13,19 @@ const clean = (val) => {
 };
 
 const apiKey = clean(import.meta.env.VITE_FIREBASE_API_KEY);
-const authDomain = clean(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
+const defaultAuthDomain = clean(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
+
+// On production (Vercel), using window.location.hostname serves /__/auth via Vercel's reverse proxy,
+// eliminating cross-domain cookie blocks, Brave Shields issues, and COOP popup severing.
+const isLocal = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname.startsWith('192.168.')
+);
+const authDomain = typeof window !== 'undefined' && !isLocal && window.location.hostname
+  ? window.location.hostname
+  : defaultAuthDomain;
+
 const projectId = clean(import.meta.env.VITE_FIREBASE_PROJECT_ID);
 const storageBucket = clean(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET);
 const messagingSenderId = clean(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID);

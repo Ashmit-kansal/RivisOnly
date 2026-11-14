@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   auth,
   googleProvider,
@@ -86,6 +86,8 @@ export function AuthProvider({ children }) {
     }
   });
 
+  const redirectProcessedRef = useRef(false);
+
   // Sync active user to localStorage
   useEffect(() => {
     try {
@@ -112,42 +114,45 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return;
 
-    // Handle return from signInWithRedirect (bypasses popup blockers and COOP entirely)
-    getRedirectResult(auth)
-      .then((result) => {
-        if (!result) return;
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const token = credential?.accessToken;
+    // Handle return from signInWithRedirect (guard against StrictMode double-mount consuming the token)
+    if (!redirectProcessedRef.current) {
+      redirectProcessedRef.current = true;
+      getRedirectResult(auth)
+        .then((result) => {
+          if (!result) return;
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          const token = credential?.accessToken;
 
-        if (token) {
-          setDriveToken(token);
-          try {
-            sessionStorage.setItem('rivisonly_google_drive_token', token);
-          } catch {}
-        }
+          if (token) {
+            setDriveToken(token);
+            try {
+              sessionStorage.setItem('rivisonly_google_drive_token', token);
+            } catch {}
+          }
 
-        const fbUser = result.user;
-        if (fbUser) {
-          const scholar = {
-            id: fbUser.uid,
-            name: fbUser.displayName || 'Google Scholar',
-            username: (fbUser.email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') || 'scholar',
-            email: fbUser.email,
-            avatar: fbUser.photoURL,
-            level: 1,
-            title: 'Scholar',
-            subjects: ['Organic Chemistry II', 'Linear Algebra', 'Cognitive Neuroscience'],
-            eloRating: 1200,
-            streak: 1,
-            joinedAt: new Date().toISOString().split('T')[0],
-            isFirebase: true,
-          };
-          setUser(scholar);
-        }
-      })
-      .catch((err) => {
-        console.warn('[Firebase] getRedirectResult notice:', err?.message);
-      });
+          const fbUser = result.user;
+          if (fbUser) {
+            const scholar = {
+              id: fbUser.uid,
+              name: fbUser.displayName || 'Google Scholar',
+              username: (fbUser.email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') || 'scholar',
+              email: fbUser.email,
+              avatar: fbUser.photoURL,
+              level: 1,
+              title: 'Scholar',
+              subjects: ['Organic Chemistry II', 'Linear Algebra', 'Cognitive Neuroscience'],
+              eloRating: 1200,
+              streak: 1,
+              joinedAt: new Date().toISOString().split('T')[0],
+              isFirebase: true,
+            };
+            setUser(scholar);
+          }
+        })
+        .catch((err) => {
+          console.warn('[Firebase] getRedirectResult notice:', err?.message);
+        });
+    }
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
