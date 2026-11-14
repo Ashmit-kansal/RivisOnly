@@ -53,8 +53,6 @@ if (isFirebaseConfigured) {
     googleProvider = new GoogleAuthProvider();
     googleProvider.addScope('profile');
     googleProvider.addScope('email');
-    googleProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
-    googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
     googleProvider.setCustomParameters({
       prompt: 'select_account',
     });
