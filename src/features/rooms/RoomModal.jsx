@@ -4,10 +4,8 @@ import DuelModal from './DuelModal';
 import { Users, Swords, UserPlus, MessageSquare, Send, Clock } from 'lucide-react';
 
 export default function RoomModal({ isOpen, onClose, room, userSubject }) {
-  if (!room) return null;
-
-  const [members, setMembers] = useState(room.members || []);
-  const [messages, setMessages] = useState(room.messages || []);
+  const [members, setMembers] = useState(room?.members || []);
+  const [messages, setMessages] = useState(room?.messages || []);
   const [chatInput, setChatInput] = useState('');
   const [activeTab, setActiveTab] = useState('group'); // 'group' | 'direct'
   const [activeDirectPeer, setActiveDirectPeer] = useState(null);
@@ -20,6 +18,8 @@ export default function RoomModal({ isOpen, onClose, room, userSubject }) {
 
   const [selectedDuelOpponent, setSelectedDuelOpponent] = useState(null);
   const [showDuelModal, setShowDuelModal] = useState(false);
+
+  if (!room) return null;
 
   const handleSendGroupMessage = (e) => {
     e.preventDefault();
