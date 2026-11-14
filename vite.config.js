@@ -8,6 +8,16 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    server: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      },
+    },
+    preview: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      },
+    },
     define: {
       'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(geminiKey),
       'import.meta.env.GEMINI_API_KEY': JSON.stringify(geminiKey),

@@ -7,6 +7,8 @@ import {
 } from '../config/firebase';
 import {
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   reauthenticateWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -106,9 +108,50 @@ export function AuthProvider({ children }) {
     }
   }, [users]);
 
-  // Real-time Firebase Auth state listener
+  // Real-time Firebase Auth state listener and redirect handler
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return;
+
+    // Handle return from signInWithRedirect (bypasses popup blockers and COOP entirely)
+    getRedirectResult(auth)
+      .then((result) => {
+        if (!result) return;
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const token = credential?.accessToken;
+
+        const isDriveRedirect = sessionStorage.getItem('rivisonly_pending_drive_redirect') === 'true';
+        if (isDriveRedirect) {
+          sessionStorage.removeItem('rivisonly_pending_drive_redirect');
+          if (token) {
+            setDriveToken(token);
+            try {
+              sessionStorage.setItem('rivisonly_google_drive_token', token);
+            } catch {}
+          }
+        }
+
+        const fbUser = result.user;
+        if (fbUser) {
+          const scholar = {
+            id: fbUser.uid,
+            name: fbUser.displayName || 'Google Scholar',
+            username: (fbUser.email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') || 'scholar',
+            email: fbUser.email,
+            avatar: fbUser.photoURL,
+            level: 1,
+            title: 'Scholar',
+            subjects: ['Organic Chemistry II', 'Linear Algebra', 'Cognitive Neuroscience'],
+            eloRating: 1200,
+            streak: 1,
+            joinedAt: new Date().toISOString().split('T')[0],
+            isFirebase: true,
+          };
+          setUser(scholar);
+        }
+      })
+      .catch((err) => {
+        console.warn('[Firebase] getRedirectResult notice:', err?.message);
+      });
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -135,8 +178,8 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  // 1. LOGIN WITH GOOGLE (POPUP)
-  const loginWithGoogle = async () => {
+  // 1. LOGIN WITH GOOGLE (POPUP WITH REDIRECT FALLBACK)
+  const loginWithGoogle = async ({ useRedirect = false } = {}) => {
     if (!isFirebaseConfigured || !auth || !googleProvider) {
       const msg = firebaseInitError 
         ? `Firebase initialization error: ${firebaseInitError}` 
@@ -145,6 +188,15 @@ export function AuthProvider({ children }) {
         success: false, 
         error: msg 
       };
+    }
+
+    if (useRedirect) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return { success: true, redirecting: true };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
     }
 
     try {
@@ -179,7 +231,7 @@ export function AuthProvider({ children }) {
       if (err.code === 'auth/popup-blocked') {
         return { 
           success: false, 
-          error: 'Browser blocked the Google sign-in window. Please click the pop-up icon (🚫) in your address bar, select "Always allow pop-ups for this site", and try again.' 
+          error: 'Browser blocked the Google sign-in window. Click "Continue with Redirect" below or allow pop-ups in your address bar.' 
         };
       }
       if (err.code === 'auth/popup-closed-by-user') {
@@ -195,17 +247,27 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 2. EXPLICIT GOOGLE DRIVE AUTHORIZATION
-  const requestDriveAccess = async () => {
+  // 2. EXPLICIT GOOGLE DRIVE AUTHORIZATION (POPUP WITH REDIRECT FALLBACK)
+  const requestDriveAccess = async ({ useRedirect = false } = {}) => {
     if (!auth) {
       return { success: false, error: 'Firebase is not initialized.' };
     }
-    try {
-      const driveProvider = new GoogleAuthProvider();
-      driveProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
-      driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
-      driveProvider.setCustomParameters({ prompt: 'consent' });
+    const driveProvider = new GoogleAuthProvider();
+    driveProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
+    driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
+    driveProvider.setCustomParameters({ prompt: 'consent' });
 
+    if (useRedirect) {
+      try {
+        sessionStorage.setItem('rivisonly_pending_drive_redirect', 'true');
+        await signInWithRedirect(auth, driveProvider);
+        return { success: true, redirecting: true };
+      } catch (err) {
+        return { success: false, error: err.message || 'Redirect failed.' };
+      }
+    }
+
+    try {
       // Clean, direct popup invocation synchronous with the user click
       const result = await signInWithPopup(auth, driveProvider);
 
@@ -224,13 +286,13 @@ export function AuthProvider({ children }) {
       if (err.code === 'auth/popup-blocked') {
         return { 
           success: false, 
-          error: 'Browser blocked the Google Drive window. Please click the pop-up blocker icon (🚫) in your address bar, choose "Always allow pop-ups for this site", and click Connect again.' 
+          error: 'Browser blocked the Google Drive window. You can click "Connect via Redirect" to authorize in this tab without popups.' 
         };
       }
       if (err.code === 'auth/popup-closed-by-user') {
         return { 
           success: false, 
-          error: 'Google Drive popup was closed before finishing. If you are using Brave or an ad blocker, click the Brave Shields / AdBlock icon in your address bar and turn Shields OFF for this site.' 
+          error: 'Google Drive popup was closed. Cross-origin restrictions or Shields closed the window. Click "Connect via Redirect" to connect seamlessly in this tab.' 
         };
       }
       if (err.code === 'auth/unauthorized-domain') {

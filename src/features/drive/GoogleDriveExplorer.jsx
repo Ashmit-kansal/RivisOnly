@@ -20,6 +20,7 @@ export default function GoogleDriveExplorer({
   selectedFile,
   onSelectFile,
   onRequestAuth,
+  onRequestAuthRedirect,
   onToast,
   externalRefreshKey = 0,
 }) {
@@ -216,13 +217,24 @@ export default function GoogleDriveExplorer({
             Authorize Rivisonly with your Google account to browse, read, and generate AI revision quizzes from your Drive notes.
           </p>
         </div>
-        <button
-          onClick={onRequestAuth}
-          className="px-4 py-2 rounded-xl bg-[rgb(var(--color-primary))] text-white text-xs font-semibold shadow-sm hover:brightness-105 cursor-pointer inline-flex items-center gap-2 transition-all"
-        >
-          <Sparkles size={14} />
-          <span>Connect Google Drive</span>
-        </button>
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <button
+            onClick={onRequestAuth}
+            className="px-4 py-2 rounded-xl bg-[rgb(var(--color-primary))] text-white text-xs font-semibold shadow-sm hover:brightness-105 cursor-pointer inline-flex items-center gap-2 transition-all"
+          >
+            <Sparkles size={14} />
+            <span>Connect Google Drive (Popup)</span>
+          </button>
+          {onRequestAuthRedirect && (
+            <button
+              onClick={onRequestAuthRedirect}
+              className="px-4 py-2 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-text))] text-xs font-semibold shadow-sm cursor-pointer inline-flex items-center gap-2 transition-all"
+              title="Full-page redirect mode (recommended for Brave and strict popup blockers)"
+            >
+              <span>Connect via Redirect (No Popup)</span>
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -487,15 +499,29 @@ export default function GoogleDriveExplorer({
                   {(error.includes('AUTH_INSUFFICIENT_SCOPES') || 
                     error.toLowerCase().includes('insufficient') || 
                     error.toLowerCase().includes('scope') || 
-                    error.includes('AUTH_EXPIRED')) && (
-                    <button
-                      type="button"
-                      onClick={onRequestAuth}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#9e3c26] hover:bg-[#be543c] text-white font-semibold text-xs cursor-pointer shadow-sm transition-all"
-                    >
-                      <Sparkles size={13} />
-                      <span>Grant Google Drive Permissions</span>
-                    </button>
+                    error.includes('AUTH_EXPIRED') ||
+                    error.includes('closed') ||
+                    error.includes('popup')) && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={onRequestAuth}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#9e3c26] hover:bg-[#be543c] text-white font-semibold text-xs cursor-pointer shadow-sm transition-all"
+                      >
+                        <Sparkles size={13} />
+                        <span>Connect Google Drive (Popup)</span>
+                      </button>
+                      {onRequestAuthRedirect && (
+                        <button
+                          type="button"
+                          onClick={onRequestAuthRedirect}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))] text-xs font-semibold transition-colors cursor-pointer"
+                          title="Full-page redirect mode without popups"
+                        >
+                          <span>Connect via Redirect (No Popup / Bypasses COOP)</span>
+                        </button>
+                      )}
+                    </div>
                   )}
                   {(error.includes('AUTH_INSUFFICIENT_SCOPES') || error.toLowerCase().includes('insufficient') || error.toLowerCase().includes('scope')) && (
                     <p className="w-full text-[10px] text-[rgb(var(--color-muted))] pt-1">

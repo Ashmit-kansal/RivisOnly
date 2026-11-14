@@ -45,9 +45,25 @@ export default function LoginModal() {
       </div>
 
       {error && (
-        <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 animate-fade-in">
-          <AlertCircle size={15} className="shrink-0" />
-          <span>{error}</span>
+        <div className="mb-5 space-y-2.5">
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 animate-fade-in">
+            <AlertCircle size={15} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+          {(error.includes('blocked') || error.includes('closed') || error.includes('popup')) && (
+            <button
+              type="button"
+              onClick={() => {
+                setError('');
+                setGoogleLoading(true);
+                loginWithGoogle({ useRedirect: true });
+              }}
+              className="w-full py-2.5 px-3 rounded-xl bg-[rgb(var(--color-primary))]/10 hover:bg-[rgb(var(--color-primary))]/20 text-[rgb(var(--color-primary))] text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <Sparkles size={13} />
+              <span>Continue with Redirect (Bypasses Popups & Shields)</span>
+            </button>
+          )}
         </div>
       )}
 

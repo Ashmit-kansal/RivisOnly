@@ -224,6 +224,13 @@ export default function NotesVault() {
                 }
               });
             }}
+            onRequestAuthRedirect={() => {
+              if (!user) {
+                setShowLogin(true);
+                return;
+              }
+              requestDriveAccess({ useRedirect: true });
+            }}
             onToast={showToast}
             externalRefreshKey={explorerRefreshKey}
           />
