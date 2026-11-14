@@ -8,19 +8,21 @@ export default function LoginModal() {
   const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setError('');
     setGoogleLoading(true);
-    try {
-      const res = await loginWithGoogle();
-      if (!res.success) {
-        setError(res.error || 'Google Sign-in was not completed.');
-      }
-    } catch {
-      setError('An error occurred during Google sign-in.');
-    } finally {
-      setGoogleLoading(false);
-    }
+    loginWithGoogle()
+      .then((res) => {
+        if (!res?.success) {
+          setError(res?.error || 'Google Sign-in was not completed.');
+        }
+      })
+      .catch(() => {
+        setError('An error occurred during Google sign-in.');
+      })
+      .finally(() => {
+        setGoogleLoading(false);
+      });
   };
 
   const handleClose = () => {

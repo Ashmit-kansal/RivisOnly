@@ -176,6 +176,12 @@ export function AuthProvider({ children }) {
       return { success: true, user: scholar };
     } catch (err) {
       console.error('Google Sign-in failed:', err);
+      if (err.code === 'auth/popup-blocked') {
+        return { 
+          success: false, 
+          error: 'Browser blocked the Google sign-in window. Please click the pop-up icon (🚫) in your address bar, select "Always allow pop-ups for this site", and try again.' 
+        };
+      }
       if (err.code === 'auth/popup-closed-by-user') {
         return { success: false, error: 'Google sign-in popup was closed before completion.' };
       }
@@ -200,18 +206,8 @@ export function AuthProvider({ children }) {
       driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
       driveProvider.setCustomParameters({ prompt: 'consent' });
 
-      let result;
-      // If user is already authenticated in Firebase, use incremental re-authentication
-      if (auth.currentUser) {
-        try {
-          result = await reauthenticateWithPopup(auth.currentUser, driveProvider);
-        } catch (reauthErr) {
-          console.warn('reauthenticateWithPopup fell back to signInWithPopup:', reauthErr?.message);
-          result = await signInWithPopup(auth, driveProvider);
-        }
-      } else {
-        result = await signInWithPopup(auth, driveProvider);
-      }
+      // Clean, direct popup invocation synchronous with the user click
+      const result = await signInWithPopup(auth, driveProvider);
 
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken;
@@ -225,10 +221,16 @@ export function AuthProvider({ children }) {
       return { success: false, error: 'No Google Drive token was received.' };
     } catch (err) {
       console.error('Drive access request failed:', err);
+      if (err.code === 'auth/popup-blocked') {
+        return { 
+          success: false, 
+          error: 'Browser blocked the Google Drive window. Please click the pop-up blocker icon (🚫) in your address bar, choose "Always allow pop-ups for this site", and click Connect again.' 
+        };
+      }
       if (err.code === 'auth/popup-closed-by-user') {
         return { 
           success: false, 
-          error: 'Google Drive popup closed before finishing. In Brave browser or if an ad blocker is running, click the Brave Shields / AdBlock icon in your address bar and turn it OFF for this site so the Google authentication window can send the access token.' 
+          error: 'Google Drive popup was closed before finishing. If you are using Brave or an ad blocker, click the Brave Shields / AdBlock icon in your address bar and turn Shields OFF for this site.' 
         };
       }
       if (err.code === 'auth/unauthorized-domain') {

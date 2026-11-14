@@ -136,18 +136,19 @@ export default function NotesVault() {
 
           {!driveToken ? (
             <button
-              onClick={async () => {
+              onClick={() => {
                 if (!user) {
                   setShowLogin(true);
                   return;
                 }
-                const res = await requestDriveAccess();
-                if (res.success) {
-                  showToast('Google Drive connected successfully!', 'success');
-                  setExplorerRefreshKey(k => k + 1);
-                } else if (res.error) {
-                  showToast(res.error, 'error');
-                }
+                requestDriveAccess().then(res => {
+                  if (res?.success) {
+                    showToast('Google Drive connected successfully!', 'success');
+                    setExplorerRefreshKey(k => k + 1);
+                  } else if (res?.error) {
+                    showToast(res.error, 'error');
+                  }
+                });
               }}
               className="px-3.5 py-1.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-[#9e3c26]/25 cursor-pointer transition-all"
             >
@@ -157,14 +158,15 @@ export default function NotesVault() {
           ) : (
             <div className="flex items-center gap-2">
               <button
-                onClick={async () => {
-                  const res = await requestDriveAccess();
-                  if (res.success) {
-                    showToast('Google Drive re-authenticated!', 'success');
-                    setExplorerRefreshKey(k => k + 1);
-                  } else if (res.error) {
-                    showToast(res.error, 'error');
-                  }
+                onClick={() => {
+                  requestDriveAccess().then(res => {
+                    if (res?.success) {
+                      showToast('Google Drive re-authenticated!', 'success');
+                      setExplorerRefreshKey(k => k + 1);
+                    } else if (res?.error) {
+                      showToast(res.error, 'error');
+                    }
+                  });
                 }}
                 className="px-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Re-authenticate or grant additional Google Drive permissions"
@@ -208,18 +210,19 @@ export default function NotesVault() {
             token={driveToken}
             selectedFile={selectedFile}
             onSelectFile={(file) => setSelectedFile(file)}
-            onRequestAuth={async () => {
+            onRequestAuth={() => {
               if (!user) {
                 setShowLogin(true);
                 return;
               }
-              const res = await requestDriveAccess();
-              if (res.success) {
-                showToast('Google Drive connected successfully!', 'success');
-                setExplorerRefreshKey(k => k + 1);
-              } else if (res.error) {
-                showToast(res.error, 'error');
-              }
+              requestDriveAccess().then(res => {
+                if (res?.success) {
+                  showToast('Google Drive connected successfully!', 'success');
+                  setExplorerRefreshKey(k => k + 1);
+                } else if (res?.error) {
+                  showToast(res.error, 'error');
+                }
+              });
             }}
             onToast={showToast}
             externalRefreshKey={explorerRefreshKey}
