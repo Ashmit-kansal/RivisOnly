@@ -119,15 +119,11 @@ export function AuthProvider({ children }) {
         const credential = GoogleAuthProvider.credentialFromResult(result);
         const token = credential?.accessToken;
 
-        const isDriveRedirect = sessionStorage.getItem('rivisonly_pending_drive_redirect') === 'true';
-        if (isDriveRedirect) {
-          sessionStorage.removeItem('rivisonly_pending_drive_redirect');
-          if (token) {
-            setDriveToken(token);
-            try {
-              sessionStorage.setItem('rivisonly_google_drive_token', token);
-            } catch {}
-          }
+        if (token) {
+          setDriveToken(token);
+          try {
+            sessionStorage.setItem('rivisonly_google_drive_token', token);
+          } catch {}
         }
 
         const fbUser = result.user;
@@ -201,10 +197,14 @@ export function AuthProvider({ children }) {
 
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      // NOTE: We intentionally do NOT set driveToken here.
-      // Basic login only requests 'profile' and 'email' scopes so new users sign in instantly
-      // without hitting Google's sensitive scopes warning screen or the 100-user cap.
-      // Drive access is granted explicitly on-demand via requestDriveAccess().
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const googleToken = credential?.accessToken;
+      if (googleToken) {
+        setDriveToken(googleToken);
+        try {
+          sessionStorage.setItem('rivisonly_google_drive_token', googleToken);
+        } catch {}
+      }
 
       const fbUser = result.user;
       const scholar = {
