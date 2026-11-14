@@ -260,7 +260,7 @@ export function AuthProvider({ children }) {
     const driveProvider = new GoogleAuthProvider();
     driveProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
     driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
-    driveProvider.setCustomParameters({ prompt: 'consent' });
+    driveProvider.setCustomParameters({ prompt: 'select_account' });
 
     if (useRedirect) {
       try {
