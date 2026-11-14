@@ -4,11 +4,13 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { PomodoroProvider } from './context/PomodoroContext';
 import { StudyRoomsProvider } from './context/StudyRoomsContext';
+import { AIProvider } from './context/AIContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import LofiPlayer from './components/lofi/LofiPlayer';
 import LoginModal from './components/auth/LoginModal';
 import SignupModal from './components/auth/SignupModal';
+import AISettingsModal from './components/ai/AISettingsModal';
 
 import Landing from './pages/Landing';
 import Pomodoro from './pages/Pomodoro';
@@ -16,44 +18,49 @@ import StudyRooms from './pages/StudyRooms';
 import NotesVault from './pages/NotesVault';
 import Revision from './pages/Revision';
 import Analytics from './pages/Analytics';
+import Profile from './pages/Profile';
 
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <PomodoroProvider>
-          <StudyRoomsProvider>
-            <BrowserRouter>
-              <div className="min-h-screen flex flex-col bg-[rgb(var(--color-surface))] text-[rgb(var(--color-text))] transition-colors selection:bg-[rgb(var(--color-primary))]/20 selection:text-[rgb(var(--color-primary))]">
-                {/* Global Sticky Navbar */}
-                <Navbar />
+        <AIProvider>
+          <PomodoroProvider>
+            <StudyRoomsProvider>
+              <BrowserRouter>
+                <div className="min-h-screen flex flex-col bg-[rgb(var(--color-surface))] text-[rgb(var(--color-text))] transition-colors selection:bg-[rgb(var(--color-primary))]/20 selection:text-[rgb(var(--color-primary))]">
+                  {/* Global Sticky Navbar */}
+                  <Navbar />
 
-            {/* Main Content View */}
-            <main className="flex-1 pb-6">
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/pomodoro" element={<Pomodoro />} />
-                <Route path="/dashboard" element={<Navigate to="/pomodoro" replace />} />
-                <Route path="/rooms" element={<StudyRooms />} />
-                <Route path="/notes" element={<NotesVault />} />
-                <Route path="/revision" element={<Revision />} />
-                <Route path="/analytics" element={<Analytics />} />
-              </Routes>
-            </main>
+              {/* Main Content View */}
+              <main className="flex-1 pb-6">
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/pomodoro" element={<Pomodoro />} />
+                  <Route path="/dashboard" element={<Navigate to="/pomodoro" replace />} />
+                  <Route path="/rooms" element={<StudyRooms />} />
+                  <Route path="/notes" element={<NotesVault />} />
+                  <Route path="/revision" element={<Revision />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/profile" element={<Profile />} />
+                </Routes>
+              </main>
 
-            {/* Architectural Footer */}
-            <Footer />
+              {/* Architectural Footer */}
+              <Footer />
 
-            {/* Floating Collapsible Lo-Fi Player */}
-            <LofiPlayer />
+              {/* Floating Collapsible Lo-Fi Player */}
+              <LofiPlayer />
 
-            {/* Global Auth Modals */}
-            <LoginModal />
-            <SignupModal />
-          </div>
-        </BrowserRouter>
-      </StudyRoomsProvider>
-    </PomodoroProvider>
+              {/* Global Auth & AI Modals */}
+              <LoginModal />
+              <SignupModal />
+              <AISettingsModal />
+            </div>
+          </BrowserRouter>
+        </StudyRoomsProvider>
+      </PomodoroProvider>
+    </AIProvider>
   </AuthProvider>
 </ThemeProvider>
   );

@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import AIKeyPointsModal from '../features/revision/AIKeyPointsModal';
 import AIProficiencyQuizModal from '../features/revision/AIProficiencyQuizModal';
 import CreateRevisionModal from '../features/revision/CreateRevisionModal';
 import ProgressBar from '../components/ui/ProgressBar';
 import { mockRevisionCards } from '../data/mockRevision';
-import { loadStoredSubjects } from '../utils/notesStorage';
+import { getAllForgedDecks } from '../services/questionBankService';
 import { 
   Sparkles, BookOpen, Clock, CheckCircle2, 
   Brain, AlertTriangle, ArrowUpRight, Filter, 
-  Layers, Plus, TrendingUp, Zap, ArrowRight, Info
+  Layers, Plus, TrendingUp, Zap, ArrowRight, Info, Dices
 } from 'lucide-react';
 
 const INTERVAL_STAGES = [
@@ -25,7 +26,7 @@ const INTERVAL_STAGES = [
     scienceSummary: 'Immediately after learning a topic, your brain forms temporary synaptic traces. Reviewing on Day 1 prevents the initial rapid drop in retention.',
     actionStep: 'Spend 3-5 minutes reading the summary notes or scanning the 3 AI key points.',
     recommendedMode: 'Manual Notes or AI Key Points',
-    cardFilterKeys: ['Day 1', 'Tomorrow', 'Due Tomorrow', 'Initial'],
+    cardFilterKeys: ['Day 1', 'Due Tomorrow', 'Initial'],
   },
   {
     interval: 'Interval 2',
@@ -40,7 +41,7 @@ const INTERVAL_STAGES = [
     scienceSummary: 'This is the steepest slope of the forgetting curve. Testing yourself when retrieval starts feeling challenging triggers active recall, sparking neuroplastic growth.',
     actionStep: 'Take a quick 3-minute AI Quiz Sprint. Testing your brain forces formulas and mechanisms to lock in.',
     recommendedMode: 'AI Practice Quiz Sprint',
-    cardFilterKeys: ['Day 3', 'decaying', 'Decay Alert', 'Needs Review', 'Review Due'],
+    cardFilterKeys: ['Day 3'],
   },
   {
     interval: 'Interval 3',
@@ -54,7 +55,7 @@ const INTERVAL_STAGES = [
     scienceSummary: 'After 1 week, your hippocampus begins transferring knowledge into associative neocortical storage. Checking key points here confirms you understand the core formulas.',
     actionStep: 'Check off the AI High-Yield Key Points checklist to verify retention confidence.',
     recommendedMode: 'AI Key Points Checklist',
-    cardFilterKeys: ['Day 7', 'Day 5', 'stable'],
+    cardFilterKeys: ['Day 7', 'Day 5'],
   },
   {
     interval: 'Interval 4',
@@ -68,7 +69,7 @@ const INTERVAL_STAGES = [
     scienceSummary: 'By Day 14, spacing has multiplied retrieval speed. A quick check-in ensures you can access formulas effortlessly under timed exam stress.',
     actionStep: 'Run through a quick challenge question or compare with adjacent concepts in other chapters.',
     recommendedMode: 'AI Quiz or Quick Problem Solving',
-    cardFilterKeys: ['Day 14', 'Day 10', 'AI Optimized'],
+    cardFilterKeys: ['Day 14', 'Day 10', 'Day 12'],
   },
   {
     interval: 'Interval 5',
@@ -82,15 +83,38 @@ const INTERVAL_STAGES = [
     scienceSummary: 'Topics reviewed at Day 30 enter permanent semantic memory. The concepts are deeply integrated into your knowledge base for semester finals.',
     actionStep: 'Topic mastered! You can archive this revision or do a quick 1-minute refresher before finals.',
     recommendedMode: 'Final Mastery Check & Archive',
-    cardFilterKeys: ['Day 30', 'Permanent', 'Mastered'],
+    cardFilterKeys: ['Day 30', 'Day 21', 'Permanent', 'Mastered'],
   },
 ];
 
 export default function Revision() {
   const navigate = useNavigate();
+  const { driveToken, requestDriveAccess } = useAuth();
   const [activeSubject, setActiveSubject] = useState('All Subjects');
   const [filterType, setFilterType] = useState('all');
-  const [revisionCards, setRevisionCards] = useState(mockRevisionCards);
+  
+  // Custom revisions persisted in localStorage with fallback to mock data
+  const [revisionCards, setRevisionCards] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rivisonly-custom-revisions');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return mockRevisionCards;
+  });
+
+  // User quiz retention overrides & reviews persisted in localStorage
+  const [retentionState, setRetentionState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rivisonly-retention-state');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   const [activeIntervalIndex, setActiveIntervalIndex] = useState(1);
 
   // Modals state
@@ -99,25 +123,183 @@ export default function Revision() {
   const [selectedTopicForKeyPoints, setSelectedTopicForKeyPoints] = useState(null);
   const [selectedTopicForQuiz, setSelectedTopicForQuiz] = useState(null);
 
-  const storedVaultSubjects = loadStoredSubjects();
-  const baseSubjects = [
-    { id: 'all', name: 'All Subjects', icon: '📚' },
-    { id: 'Organic Chemistry II', name: 'Organic Chemistry II', icon: '🧬', code: 'CHEM-302' },
-    { id: 'Linear Algebra', name: 'Linear Algebra', icon: '📐', code: 'MATH-204' },
-    { id: 'Cognitive Neuroscience', name: 'Cognitive Neuroscience', icon: '🧠', code: 'NEUR-410' },
-  ];
-  const extraSubjects = (storedVaultSubjects || [])
-    .filter(s => !baseSubjects.some(b => b.name.toLowerCase() === s.name.toLowerCase()))
-    .map(s => ({
-      id: s.id || s.name,
-      name: s.name,
-      icon: '📖',
-      code: s.code || ''
-    }));
-  const subjects = [...baseSubjects, ...extraSubjects];
+  // Helper to compute dynamic retention score & decay based on Ebbinghaus forgetting curve
+  const computeRetention = (cardKey, { initialTime, defaultProgress, defaultScore, defaultStatus }) => {
+    const override = retentionState[cardKey];
+    if (override && override.lastReviewedAt) {
+      const elapsedHours = (Date.now() - override.lastReviewedAt) / (1000 * 60 * 60);
+      // Stability increases with each active recall review
+      const stabilityHours = 24 * (1 + (override.reviewCount || 1) * 2.5);
+      const score = Math.max(40, Math.min(100, Math.round(override.lastScore * Math.exp(-elapsedHours / stabilityHours))));
+      const isDecaying = score < 75;
+      
+      let progress = 'Day 30 of 30';
+      if ((override.reviewCount || 1) <= 1) progress = 'Day 3 of 30';
+      else if ((override.reviewCount || 1) === 2) progress = 'Day 7 of 30';
+      else if ((override.reviewCount || 1) === 3) progress = 'Day 14 of 30';
+
+      return {
+        decayScore: score,
+        decayStatus: isDecaying ? 'decaying' : (score >= 90 ? 'fresh' : 'stable'),
+        progress,
+        badge: score >= 90 ? `Mastered (${score}%)` : (isDecaying ? `Needs Review (${score}%)` : `Proficient (${score}%)`),
+        proficiencyScore: override.lastScore
+      };
+    }
+
+    if (initialTime) {
+      const elapsedHours = (Date.now() - initialTime) / (1000 * 60 * 60);
+      if (elapsedHours > 336) {
+        return { decayScore: 48, decayStatus: 'decaying', progress: 'Day 30 of 30', badge: 'Needs Review (48%)', proficiencyScore: 50 };
+      }
+      if (elapsedHours > 168) {
+        return { decayScore: 58, decayStatus: 'decaying', progress: 'Day 14 of 30', badge: 'Needs Review (58%)', proficiencyScore: 60 };
+      }
+      if (elapsedHours > 72) {
+        return { decayScore: 68, decayStatus: 'decaying', progress: 'Day 7 of 30', badge: 'Needs Review (68%)', proficiencyScore: 70 };
+      }
+      if (elapsedHours > 24) {
+        return { decayScore: 78, decayStatus: 'decaying', progress: 'Day 3 of 30', badge: 'Review Due (78%)', proficiencyScore: 75 };
+      }
+      return { decayScore: 95, decayStatus: 'fresh', progress: 'Day 1 of 30', badge: 'Fresh Memory (95%)', proficiencyScore: 85 };
+    }
+
+    return {
+      decayScore: defaultScore || 85,
+      decayStatus: defaultStatus || 'fresh',
+      progress: defaultProgress || 'Day 1 of 30',
+      badge: `${defaultStatus === 'decaying' ? 'Needs Review' : 'Active'} (${defaultScore || 85}%)`,
+      proficiencyScore: defaultScore || 85
+    };
+  };
+
+  // Load real forged study notes from Google Drive / localStorage
+  const forgedDecks = useMemo(() => {
+    try {
+      return getAllForgedDecks();
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const forgedCards = useMemo(() => {
+    return forgedDecks.map(deck => {
+      const cleanTopic = (deck.fileName || 'Academic Note')
+        .replace(/^Summary\s*-\s*/i, '')
+        .replace(/\.[^/.]+$/, '')
+        .trim();
+
+      const cardKey = (cleanTopic || deck.fileId).toLowerCase();
+      const retention = computeRetention(cardKey, { initialTime: deck.forgedAt });
+
+      // Rich key points with takeaways and analogies
+      const keyPoints = (deck.summary || []).slice(0, 5).map(s => {
+        let content = s.definition || s.content || '';
+        if (Array.isArray(s.mainPoints) && s.mainPoints.length > 0) {
+          content = content ? `${content}\n\n• ${s.mainPoints.join('\n• ')}` : s.mainPoints.join(' • ');
+        }
+        if (s.example) {
+          content += `\n\nAnalogy: ${s.example}`;
+        }
+        return {
+          title: s.title || 'Core Topic',
+          content,
+          formula: s.formula || (s.examTip ? `Tip: ${s.examTip}` : null)
+        };
+      });
+
+      return {
+        id: `forged-${deck.fileId || cleanTopic}`,
+        subject: 'Google Drive Notes',
+        topic: cleanTopic,
+        type: 'ai',
+        badge: retention.badge,
+        progress: retention.progress,
+        decayScore: retention.decayScore,
+        decayStatus: retention.decayStatus,
+        decayColor: retention.decayScore < 75 ? '#c84b31' : '#2d7d46',
+        description: deck.summary?.[0]?.definition || deck.summary?.[0]?.content || `Complete concept summary with ${deck.summary?.length || 0} topics and interactive mindmap.`,
+        sourcesScanned: 1,
+        tokensVectorized: 6000,
+        noteFileId: deck.fileId,
+        noteFileName: deck.fileName,
+        proficiencyScore: retention.proficiencyScore,
+        keyPoints,
+        customQuestions: deck.questions || [],
+        isForgedNote: true
+      };
+    });
+  }, [forgedDecks, retentionState]);
+
+  // Combine forged cards with custom/curated revision cards applying retention calculation
+  const allCards = useMemo(() => {
+    const mappedCards = revisionCards.map(c => {
+      const cardKey = (c.topic || c.id).toLowerCase();
+      if (retentionState[cardKey]) {
+        const retention = computeRetention(cardKey, {
+          defaultProgress: c.progress,
+          defaultScore: c.decayScore,
+          defaultStatus: c.decayStatus
+        });
+        return {
+          ...c,
+          decayScore: retention.decayScore,
+          decayStatus: retention.decayStatus,
+          progress: retention.progress,
+          badge: retention.badge,
+          proficiencyScore: retention.proficiencyScore
+        };
+      }
+      return c;
+    });
+
+    return [...forgedCards, ...mappedCards];
+  }, [forgedCards, revisionCards, retentionState]);
+
+  // Derive subject filter tabs dynamically from real cards in queue
+  const subjects = useMemo(() => {
+    const list = [{ id: 'all', name: 'All Subjects', icon: '📚' }];
+    const unique = new Set();
+    
+    // Always include Google Drive Notes if present
+    const hasDriveNotes = allCards.some(c => c.subject === 'Google Drive Notes' || c.isForgedNote);
+    if (hasDriveNotes) {
+      list.push({ id: 'Google Drive Notes', name: 'Google Drive Notes', icon: '📂', code: 'DRIVE' });
+      unique.add('Google Drive Notes');
+    }
+
+    allCards.forEach(c => {
+      if (c.subject && c.subject !== 'All Subjects' && !unique.has(c.subject)) {
+        unique.add(c.subject);
+        list.push({
+          id: c.subject,
+          name: c.subject,
+          icon: '📖',
+          code: c.subject.slice(0, 4).toUpperCase()
+        });
+      }
+    });
+
+    return list;
+  }, [allCards]);
+
+  // Open AI Practice Quiz (samples 5 questions at random across all notes if folder scope)
+  const handleOpenQuiz = (card) => {
+    if (!card) return;
+    if (card.isFolderScope && Array.isArray(card.questionPool) && card.questionPool.length > 0) {
+      // Pick 5 questions at random from across all notes in this folder
+      const shuffled = [...card.questionPool].sort(() => 0.5 - Math.random());
+      setSelectedTopicForQuiz({
+        ...card,
+        customQuestions: shuffled.slice(0, 5)
+      });
+    } else {
+      setSelectedTopicForQuiz(card);
+    }
+  };
 
   // Filtered cards
-  const filteredCards = revisionCards.filter(card => {
+  const filteredCards = allCards.filter(card => {
     const matchesSubject = activeSubject === 'All Subjects' || card.subject === activeSubject;
     if (!matchesSubject) return false;
     if (filterType === 'all') return true;
@@ -128,24 +310,61 @@ export default function Revision() {
   });
 
   const handleCreateRevision = (newCard) => {
-    setRevisionCards(prev => [newCard, ...prev]);
+    setRevisionCards(prev => {
+      const updated = [newCard, ...prev];
+      try {
+        localStorage.setItem('rivisonly-custom-revisions', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Could not save custom revisions', e);
+      }
+      return updated;
+    });
     if (activeSubject !== 'All Subjects' && activeSubject !== newCard.subject) {
       setActiveSubject(newCard.subject);
     }
   };
 
+  // Called when student finishes an AI practice quiz
+  const handleQuizCompleted = ({ topic, percentage }) => {
+    if (!topic) return;
+    const cardKey = topic.trim().toLowerCase();
+    setRetentionState(prev => {
+      const existing = prev[cardKey] || {};
+      const updated = {
+        ...prev,
+        [cardKey]: {
+          lastReviewedAt: Date.now(),
+          lastScore: percentage,
+          reviewCount: (existing.reviewCount || 0) + 1
+        }
+      };
+      try {
+        localStorage.setItem('rivisonly-retention-state', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Could not save retention state', e);
+      }
+      return updated;
+    });
+  };
+
   const handleRedirectToNotes = (card) => {
-    const subjectParam = encodeURIComponent(card.subject);
-    const fileParam = card.noteFileId ? `&fileId=${card.noteFileId}` : '';
-    const folderParam = card.folder ? `&folder=${encodeURIComponent(card.folder)}` : '';
-    navigate(`/notes?subject=${subjectParam}${folderParam}${fileParam}&mode=manual`);
+    if (card.isFolderScope) {
+      navigate(`/notes?folder=${encodeURIComponent(card.folder || '')}`);
+    } else if (card.isForgedNote || card.subject === 'Google Drive Notes') {
+      navigate(`/notes?fileId=${card.noteFileId || ''}&fileName=${encodeURIComponent(card.noteFileName || card.topic)}`);
+    } else {
+      const subjectParam = encodeURIComponent(card.subject);
+      const fileParam = card.noteFileId ? `&fileId=${card.noteFileId}` : '';
+      const folderParam = card.folder ? `&folder=${encodeURIComponent(card.folder)}` : '';
+      navigate(`/notes?subject=${subjectParam}${folderParam}${fileParam}&mode=manual`);
+    }
   };
 
   // Live dynamic statistics computed from active queue
   const avgRetention = Math.round(
-    revisionCards.reduce((acc, c) => acc + (Number(c.decayScore) || 85), 0) / (revisionCards.length || 1)
+    allCards.reduce((acc, c) => acc + (Number(c.decayScore) || 85), 0) / (allCards.length || 1)
   );
-  const dueRetestCount = revisionCards.filter(c => c.decayStatus === 'decaying' || (c.decayScore && Number(c.decayScore) < 75)).length;
+  const dueRetestCount = allCards.filter(c => c.decayStatus === 'decaying' || (c.decayScore && Number(c.decayScore) < 75)).length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8 animate-fade-in">
@@ -229,19 +448,25 @@ export default function Revision() {
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
           <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
             <span>Memory Health Score</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className={`w-2 h-2 rounded-full ${avgRetention >= 80 ? 'bg-emerald-500' : avgRetention >= 70 ? 'bg-amber-500' : 'bg-red-500'}`} />
           </div>
           <div className="text-3xl font-bold font-mono text-[rgb(var(--color-secondary))] mt-1.5">{avgRetention}%</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">{dueRetestCount} topic{dueRetestCount === 1 ? '' : 's'} need review soon</div>
+          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">
+            {dueRetestCount === 0 ? 'All topics memory-stable' : `${dueRetestCount} topic${dueRetestCount === 1 ? '' : 's'} need review`}
+          </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
           <div className="text-[10px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold flex items-center justify-between">
             <span>Topics Due for Review</span>
-            <AlertTriangle size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
+            <AlertTriangle size={13} className={dueRetestCount > 0 ? "text-[#9e3c26] dark:text-[#ffb4a3]" : "text-emerald-500"} />
           </div>
-          <div className="text-3xl font-bold font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1.5">{dueRetestCount}</div>
-          <div className="text-[11px] font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1 font-medium">Ready for active recall</div>
+          <div className={`text-3xl font-bold font-mono mt-1.5 ${dueRetestCount > 0 ? 'text-[#9e3c26] dark:text-[#ffb4a3]' : 'text-emerald-600 dark:text-emerald-400'}`}>
+            {dueRetestCount}
+          </div>
+          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1 font-medium">
+            {dueRetestCount > 0 ? 'Ready for active recall' : 'Queue fully up to date'}
+          </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
@@ -249,8 +474,10 @@ export default function Revision() {
             <span>Topics in Queue</span>
             <CheckCircle2 size={13} className="text-[rgb(var(--color-tertiary))]" />
           </div>
-          <div className="text-3xl font-bold font-mono text-[rgb(var(--color-tertiary))] mt-1.5">{revisionCards.length}</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">Across active disciplines</div>
+          <div className="text-3xl font-bold font-mono text-[rgb(var(--color-tertiary))] mt-1.5">{allCards.length}</div>
+          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">
+            {forgedCards.length > 0 ? `${forgedCards.length} Drive notes + ${allCards.length - forgedCards.length} curated` : 'Across active disciplines'}
+          </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
@@ -258,8 +485,10 @@ export default function Revision() {
             <span>Retention Efficiency</span>
             <Sparkles size={13} className="text-amber-500" />
           </div>
-          <div className="text-3xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1.5">+22%</div>
-          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">Smart Spacing Boost</div>
+          <div className="text-3xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1.5">
+            +{Math.max(16, avgRetention - 55)}%
+          </div>
+          <div className="text-[11px] font-mono text-[rgb(var(--color-muted))] mt-1">Spaced Repetition Lift</div>
         </div>
       </div>
 
@@ -383,7 +612,7 @@ export default function Revision() {
                     {/* Option 2: AI Practice Quiz */}
                     <button
                       type="button"
-                      onClick={() => setSelectedTopicForQuiz(card)}
+                      onClick={() => handleOpenQuiz(card)}
                       className="py-1.5 px-2 rounded-lg bg-[#9e3c26]/10 hover:bg-[#9e3c26]/20 dark:bg-[#e26f54]/15 text-[#9e3c26] dark:text-[#ffb4a3] text-[11px] font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
                       title="Test proficiency with AI Quiz"
                     >
@@ -396,10 +625,10 @@ export default function Revision() {
                       type="button"
                       onClick={() => handleRedirectToNotes(card)}
                       className="py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
-                      title="Redirect to full notes in vault"
+                      title="Redirect to full notes & mindmap in vault"
                     >
                       <BookOpen size={11} />
-                      <span>Manual</span>
+                      <span>{card.isForgedNote ? 'Notes' : 'Manual'}</span>
                     </button>
                   </div>
                 </div>
@@ -490,13 +719,10 @@ export default function Revision() {
         {/* Selected Stage Deep-Dive Explainer Panel */}
         {(() => {
           const currentStage = INTERVAL_STAGES[activeIntervalIndex];
-          const stageMatchingCards = filteredCards.filter(c => 
-            currentStage.cardFilterKeys.some(key => 
-              c.progress?.toLowerCase().includes(key.toLowerCase()) || 
-              c.badge?.toLowerCase().includes(key.toLowerCase()) ||
-              (key === 'decaying' && c.decayStatus === 'decaying')
-            )
-          );
+          const stageMatchingCards = filteredCards.filter(c => {
+            const prog = (c.progress || '').toLowerCase();
+            return currentStage.cardFilterKeys.some(key => prog.includes(key.toLowerCase()));
+          });
 
           return (
             <div className="p-4 sm:p-5 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] space-y-4 animate-fade-in">
@@ -558,22 +784,34 @@ export default function Revision() {
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       type="button"
+                      disabled={stageMatchingCards.length === 0}
                       onClick={() => {
-                        const target = stageMatchingCards[0] || filteredCards[0];
-                        if (target) setSelectedTopicForQuiz(target);
+                        const target = stageMatchingCards[0];
+                        if (target) handleOpenQuiz(target);
                       }}
-                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#9e3c26] hover:bg-[#be543c] text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs"
+                      className={`flex-1 py-1.5 px-2.5 rounded-lg text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-all shadow-2xs ${
+                        stageMatchingCards.length > 0 
+                          ? 'bg-[#9e3c26] hover:bg-[#be543c] cursor-pointer' 
+                          : 'bg-gray-400/20 text-[rgb(var(--color-muted))] cursor-not-allowed opacity-60'
+                      }`}
+                      title={stageMatchingCards.length > 0 ? `Launch AI quiz for ${stageMatchingCards[0].topic}` : 'No topic due in this window'}
                     >
                       <Sparkles size={11} />
                       <span>AI Quiz</span>
                     </button>
                     <button
                       type="button"
+                      disabled={stageMatchingCards.length === 0}
                       onClick={() => {
-                        const target = stageMatchingCards[0] || filteredCards[0];
+                        const target = stageMatchingCards[0];
                         if (target) setSelectedTopicForKeyPoints(target);
                       }}
-                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-[rgb(var(--color-tertiary-container))] text-[rgb(var(--color-tertiary))] hover:opacity-90 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition-all ${
+                        stageMatchingCards.length > 0
+                          ? 'bg-[rgb(var(--color-tertiary-container))] text-[rgb(var(--color-tertiary))] hover:opacity-90 cursor-pointer'
+                          : 'bg-gray-400/15 text-[rgb(var(--color-muted))] cursor-not-allowed opacity-60'
+                      }`}
+                      title={stageMatchingCards.length > 0 ? `Read key points for ${stageMatchingCards[0].topic}` : 'No topic due in this window'}
                     >
                       <BookOpen size={11} />
                       <span>Key Points</span>
@@ -599,7 +837,7 @@ export default function Revision() {
                         {stageMatchingCards.map(c => (
                           <div
                             key={c.id}
-                            onClick={() => setSelectedTopicForQuiz(c)}
+                            onClick={() => handleOpenQuiz(c)}
                             className="p-2 rounded-lg bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container-high))] border border-[rgb(var(--color-border))] text-left cursor-pointer transition-colors group flex items-center justify-between gap-1"
                           >
                             <span className="text-xs font-medium text-[rgb(var(--color-text))] truncate group-hover:text-[#9e3c26] dark:group-hover:text-[#ffb4a3]">
@@ -613,7 +851,7 @@ export default function Revision() {
                       </div>
                     ) : (
                       <p className="text-xs text-[rgb(var(--color-muted))] leading-relaxed">
-                        No topics currently queued for this interval. Use "+ Create Revision" above to schedule a new chapter.
+                        No topics currently queued for this interval. Use "+ Schedule a Topic" below to add one.
                       </p>
                     )}
                   </div>
@@ -633,23 +871,10 @@ export default function Revision() {
 
               </div>
 
-              {/* Intuitive Cramming vs Spacing Strip */}
-              <div className="pt-3 border-t border-[rgb(var(--color-border))] flex flex-col sm:flex-row items-center justify-between text-xs text-[rgb(var(--color-muted))] gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[rgb(var(--color-text))]">💡 Pro-Tip:</span>
-                  <span>5 short 3-minute reviews (15 mins total) yields 95% retention vs 5 hours of cramming (which drops to 20% in 72 hours).</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCreateModalInterval(currentStage.day);
-                    setShowCreateModal(true);
-                  }}
-                  className="font-bold text-[#9e3c26] dark:text-[#ffb4a3] hover:underline cursor-pointer shrink-0 text-xs flex items-center gap-1"
-                >
-                  <span>Create Spaced Schedule</span>
-                  <ArrowRight size={12} />
-                </button>
+              {/* Intuitive Cramming vs Spacing Educational Strip */}
+              <div className="pt-3 border-t border-[rgb(var(--color-border))] flex items-center gap-2 text-xs text-[rgb(var(--color-muted))]">
+                <span className="font-bold text-[rgb(var(--color-text))]">💡 Memory Insight:</span>
+                <span>Short 3-minute active recall reviews at these 5 milestones yield ~95% long-term retention vs 5 hours of cramming (which drops below 30% in 72 hours).</span>
               </div>
 
             </div>
@@ -669,7 +894,7 @@ export default function Revision() {
           onStartQuiz={() => {
             const item = selectedTopicForKeyPoints;
             setSelectedTopicForKeyPoints(null);
-            setSelectedTopicForQuiz(item);
+            handleOpenQuiz(item);
           }}
           onReadNotes={() => handleRedirectToNotes(selectedTopicForKeyPoints)}
         />
@@ -682,6 +907,8 @@ export default function Revision() {
           onClose={() => setSelectedTopicForQuiz(null)}
           topic={selectedTopicForQuiz.topic}
           subject={selectedTopicForQuiz.subject}
+          customQuestions={selectedTopicForQuiz.customQuestions}
+          onCompleteQuiz={handleQuizCompleted}
           onViewKeyPoints={() => {
             const item = selectedTopicForQuiz;
             setSelectedTopicForQuiz(null);
@@ -695,7 +922,8 @@ export default function Revision() {
       <CreateRevisionModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        defaultSubject={activeSubject === 'All Subjects' ? 'Organic Chemistry II' : activeSubject}
+        driveToken={driveToken}
+        onRequestDriveAuth={requestDriveAccess}
         defaultInterval={createModalInterval}
         onCreate={handleCreateRevision}
       />

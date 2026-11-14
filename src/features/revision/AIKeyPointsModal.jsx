@@ -23,25 +23,10 @@ export default function AIKeyPointsModal({
 
   if (!isOpen) return null;
 
-  const defaultPoints = keyPoints.length > 0 ? keyPoints : [
-    {
-      title: 'Core Concept Synthesis',
-      content: 'Key rate-determining mechanism step involves nucleophilic addition forming a resonance-stabilized carbanion intermediate.',
-      formula: 'Rate = k [Reactant][Reagent]'
-    },
-    {
-      title: 'Thermodynamic & Kinetic Factors',
-      content: 'Electron withdrawing substituents lower activation barriers substantially by delocalizing charge density across conjugated heteroatoms.'
-    },
-    {
-      title: 'Common Exam Edge Cases',
-      content: 'Watch for stereochemical inversion versus retention when comparing SN1 and SN2 pathway competitions.'
-    }
-  ];
-
-  const totalPoints = defaultPoints.length;
+  const pointsList = Array.isArray(keyPoints) && keyPoints.length > 0 ? keyPoints : [];
+  const totalPoints = pointsList.length;
   const masteredCount = Object.values(checkedPoints).filter(Boolean).length;
-  const recallPercentage = Math.round((masteredCount / totalPoints) * 100);
+  const recallPercentage = totalPoints > 0 ? Math.round((masteredCount / totalPoints) * 100) : 0;
 
   const togglePoint = (idx) => {
     setCheckedPoints(prev => ({ ...prev, [idx]: !prev[idx] }));
@@ -92,7 +77,7 @@ export default function AIKeyPointsModal({
 
         {/* Key Points List */}
         <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-          {defaultPoints.map((pt, idx) => {
+          {pointsList.map((pt, idx) => {
             const isChecked = !!checkedPoints[idx];
             return (
               <div

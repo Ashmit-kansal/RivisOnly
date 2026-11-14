@@ -45,7 +45,7 @@ export default function RoomCommitmentView({ room, onCommit, onCancel }) {
         className="inline-flex items-center gap-2 text-xs font-mono text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors cursor-pointer"
       >
         <ArrowLeft size={14} />
-        <span>Back to Study Halls Lobby</span>
+        <span>Back to Arena & Squads</span>
       </button>
 
       {/* Main Commitment Card */}

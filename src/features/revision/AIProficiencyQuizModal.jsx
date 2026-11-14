@@ -11,7 +11,8 @@ export default function AIProficiencyQuizModal({
   subject = 'Organic Chemistry II', 
   customQuestions, 
   onViewKeyPoints,
-  onReadNotes 
+  onReadNotes,
+  onCompleteQuiz 
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -33,9 +34,33 @@ export default function AIProficiencyQuizModal({
   if (!isOpen) return null;
 
   // Pick questions from bank based on subject or fallback
-  const questionsList = customQuestions && customQuestions.length > 0
+  const questionsList = Array.isArray(customQuestions)
     ? customQuestions
-    : (mockAIQuizBank[subject] || mockAIQuizBank['Organic Chemistry II']).slice(0, 5);
+    : (mockAIQuizBank[subject] || mockAIQuizBank['Organic Chemistry II'] || []).slice(0, 5);
+
+  if (questionsList.length === 0) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-md">
+        <div className="p-6 text-center space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
+            <Sparkles size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-base text-[rgb(var(--color-text))]">No Quiz Questions Available</h3>
+            <p className="text-xs text-[rgb(var(--color-muted))] mt-1 leading-relaxed">
+              Gemini could not extract quiz questions from this document. Please ensure the note contains readable text and that your Gemini API key is active.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-xs font-semibold text-[rgb(var(--color-text))] cursor-pointer transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   const currentQ = questionsList[activeIdx] || questionsList[0];
 
@@ -245,7 +270,18 @@ export default function AIProficiencyQuizModal({
             )}
 
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (onCompleteQuiz) {
+                  onCompleteQuiz({
+                    topic,
+                    subject,
+                    score,
+                    total: questionsList.length,
+                    percentage: proficiencyPercent
+                  });
+                }
+                onClose();
+              }}
               className="px-5 py-2 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white text-xs font-semibold cursor-pointer shadow-sm"
             >
               Done & Record

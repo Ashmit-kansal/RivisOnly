@@ -1,37 +1,25 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import { useAuth } from '../../context/AuthContext';
-import { UserPlus, Sparkles, Mail, Lock, User, BookOpen, Eye, EyeOff, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
+import { UserPlus, ShieldCheck, AlertCircle, Sparkles, FolderSync, Brain } from 'lucide-react';
 
 export default function SignupModal() {
-  const { showSignup, setShowSignup, setShowLogin, signup, loginAsDemo } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subjectPreference, setSubjectPreference] = useState('Organic Chemistry II');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const { showSignup, setShowSignup, loginWithGoogle } = useAuth();
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleGoogleSignIn = async () => {
     setError('');
-    setLoading(true);
-
+    setGoogleLoading(true);
     try {
-      const res = await signup({ name, email, password, subjectPreference });
+      const res = await loginWithGoogle();
       if (!res.success) {
-        setError(res.error || 'Failed to create account. Please check your details.');
-      } else {
-        setName('');
-        setEmail('');
-        setPassword('');
-        setError('');
+        setError(res.error || 'Google Sign-in was not completed.');
       }
     } catch {
-      setError('An unexpected error occurred during signup. Please try again.');
+      setError('An error occurred during Google sign-in.');
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -43,153 +31,61 @@ export default function SignupModal() {
   return (
     <Modal isOpen={showSignup} onClose={handleClose} maxWidth="max-w-md">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] mb-3">
-          <UserPlus size={22} />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] mb-3.5 shadow-inner">
+          <UserPlus size={26} />
         </div>
-        <h3 className="text-2xl font-bold tracking-tight text-[rgb(var(--color-text))]">Create Scholar Account</h3>
-        <p className="text-sm text-[rgb(var(--color-muted))] mt-1">
-          Begin your synchronized spaced learning journey
+        <h3 className="text-2xl font-bold tracking-tight text-[rgb(var(--color-text))]">
+          Create Scholar Account
+        </h3>
+        <p className="text-xs sm:text-sm text-[rgb(var(--color-muted))] mt-1.5 leading-relaxed">
+          Join Rivisonly using your Google account to sync your study notes and spaced repetition.
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 animate-fade-in">
+        <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 animate-fade-in">
           <AlertCircle size={15} className="shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] mb-1">
-            Full Name
-          </label>
-          <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))]" size={16} />
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => { setName(e.target.value); setError(''); }}
-              placeholder="e.g. Hypatia of Alexandria"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))] text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/30 focus:border-[rgb(var(--color-primary))]"
-              autoFocus
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] mb-1">
-            Academic Email
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))]" size={16} />
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setError(''); }}
-              placeholder="scholar@university.edu"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))] text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/30 focus:border-[rgb(var(--color-primary))]"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] mb-1">
-            Primary Discipline Focus
-          </label>
-          <div className="relative">
-            <BookOpen className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))]" size={16} />
-            <select
-              value={subjectPreference}
-              onChange={(e) => setSubjectPreference(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))] text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/30 focus:border-[rgb(var(--color-primary))] appearance-none cursor-pointer"
-            >
-              <option value="Organic Chemistry II">Organic Chemistry II</option>
-              <option value="Linear Algebra">Linear Algebra</option>
-              <option value="Cognitive Neuroscience">Cognitive Neuroscience</option>
-              <option value="Macroeconomics">Macroeconomics</option>
-              <option value="Computer Science">Computer Science & Algorithms</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] mb-1">
-            Master Password
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))]" size={16} />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              placeholder="At least 6 characters"
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))] text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/30 focus:border-[rgb(var(--color-primary))]"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] cursor-pointer p-1"
-              title={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full mt-2 py-3 rounded-xl bg-[rgb(var(--color-primary))] hover:brightness-105 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-[rgb(var(--color-primary))]/20 transition-all cursor-pointer active:scale-[0.99]"
-        >
-          {loading ? 'Initializing Vault...' : 'Create Vault & Start Practicing'}
-          <ArrowRight size={16} />
-        </button>
-
-        <div className="relative py-0.5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[rgb(var(--color-border))]" />
-          </div>
-          <div className="relative flex justify-center text-[10px] font-mono uppercase tracking-wider">
-            <span className="bg-[rgb(var(--color-card))] px-2 text-[rgb(var(--color-muted))]">OR</span>
-          </div>
-        </div>
-
+      {/* 1-Click Google Sign Up Button */}
+      <div className="space-y-4">
         <button
           type="button"
-          onClick={() => {
-            setError('');
-            loginAsDemo();
-          }}
-          className="w-full py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container-high))] text-[rgb(var(--color-text))] font-medium text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-[rgb(var(--color-border))]"
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading}
+          className="w-full py-3 px-4 rounded-xl border border-[rgb(var(--color-border))] bg-white dark:bg-[rgb(var(--color-container-low))] hover:bg-slate-50 dark:hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-sm flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50"
         >
-          <Sparkles size={14} className="text-[rgb(var(--color-primary))]" />
-          Preview with Demo Account (Lv. 14 Scholar)
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+          </svg>
+          <span>{googleLoading ? 'Connecting to Google...' : 'Sign up with Google'}</span>
         </button>
-      </form>
 
-      <div className="mt-5 pt-4 border-t border-[rgb(var(--color-border))] text-center text-xs text-[rgb(var(--color-muted))]">
-        Already registered?{' '}
-        <button
-          type="button"
-          onClick={() => {
-            setError('');
-            setShowSignup(false);
-            setShowLogin(true);
-          }}
-          className="text-[rgb(var(--color-primary))] font-semibold hover:underline cursor-pointer"
-        >
-          Sign In
-        </button>
+        {/* Feature Highlights */}
+        <div className="pt-2 space-y-2 border-t border-[rgb(var(--color-border))]/60">
+          <div className="flex items-center gap-2.5 text-xs text-[rgb(var(--color-muted))]">
+            <FolderSync size={14} className="text-[#9e3c26] dark:text-[#ffb4a3] shrink-0" />
+            <span>Connects directly to your Google Drive for AI lecture notes scanning</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-[rgb(var(--color-muted))]">
+            <Brain size={14} className="text-[rgb(var(--color-secondary))] shrink-0" />
+            <span>Real-time quiz duels and spaced repetition memory benchmarks</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-[rgb(var(--color-muted))]">
+            <Sparkles size={14} className="text-amber-500 shrink-0" />
+            <span>Instant setup • No passwords or verification emails required</span>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-[rgb(var(--color-muted))]">
+      <div className="mt-6 pt-4 border-t border-[rgb(var(--color-border))] flex items-center justify-center gap-1.5 text-[11px] text-[rgb(var(--color-muted))]">
         <ShieldCheck size={13} className="text-emerald-500" />
-        <span>Local & private repository synchronization</span>
+        <span>End-to-end encrypted academic sync</span>
       </div>
     </Modal>
   );

@@ -1,318 +1,191 @@
 import React, { useState } from 'react';
-import RoomCard from '../features/rooms/RoomCard';
+import { useAuth } from '../context/AuthContext';
+import { useStudyRooms } from '../context/StudyRoomsContext';
+
+import ArenaHeroBanner from '../features/arena/ArenaHeroBanner';
+import LeagueLeaderboard from '../features/arena/LeagueLeaderboard';
+import CommunityBossBar from '../features/arena/CommunityBossBar';
+import PrivateGuildsSection from '../features/guilds/PrivateGuildsSection';
+import GuildWarLeaderboard from '../features/guilds/GuildWarLeaderboard';
+import LeagueRoadView from '../features/leagues/LeagueRoadView';
 import RoomCommitmentView from '../features/rooms/RoomCommitmentView';
 import ActiveStudyRoom from '../features/rooms/ActiveStudyRoom';
 import DuelModal from '../features/rooms/DuelModal';
-import Modal from '../components/ui/Modal';
-import { useAuth } from '../context/AuthContext';
-import { useStudyRooms } from '../context/StudyRoomsContext';
-import { Users, Plus, Search, Swords, Lock } from 'lucide-react';
+
+import { Shield, Swords, Trophy, Heart, Zap, Lock, Star } from 'lucide-react';
 
 export default function StudyRooms() {
   const { user } = useAuth();
-  const { 
-    rooms, 
-    activeRoomSession, 
-    joinRoom, 
-    leaveRoom, 
-    createRoom 
+  const {
+    activeRoomSession,
+    joinSquadRoom,
+    leaveSquadRoom,
+    myGuild
   } = useStudyRooms();
 
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Local state for commitment modal view
-  const [selectedRoomForCommit, setSelectedRoomForCommit] = useState(null);
+  // Navigation tab: 'guilds' | 'wars' | 'leagues' | 'boss'
+  const [activeTab, setActiveTab] = useState('guilds');
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  // Commitment & Session View State
+  const [selectedSquadForCommit, setSelectedSquadForCommit] = useState(null);
+
+  // 1v1 Duel Modal
   const [showGlobalDuelModal, setShowGlobalDuelModal] = useState(false);
 
-  // New room form state
-  const [newRoomName, setNewRoomName] = useState('');
-  const [newRoomSubject, setNewRoomSubject] = useState('Organic Chemistry II');
-  const [newRoomType, setNewRoomType] = useState('public');
-  const [newRoomPasscode, setNewRoomPasscode] = useState('');
-  const [newRoomCycle, setNewRoomCycle] = useState('25m Cycle');
-
-  const filteredRooms = rooms.filter(room => {
-    const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          room.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
-    if (activeFilter === 'All') return true;
-    if (activeFilter === 'Public') return !room.isPrivate;
-    if (activeFilter === 'Private') return room.isPrivate;
-    return room.subject === activeFilter;
-  });
-
-  // Handler when user clicks "Join" on a room card
-  const handleInitiateJoin = (room) => {
-    setSelectedRoomForCommit(room);
+  // Handler when user clicks "Enter Chamber" on a squad/guild
+  const handleInitiateJoin = (squad) => {
+    setSelectedSquadForCommit(squad);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Handler when user confirms their time commitment
+  // Handler when user confirms time commitment
   const handleCommitAndEnter = (committedMinutes) => {
-    if (!selectedRoomForCommit) return;
-    joinRoom(selectedRoomForCommit, committedMinutes, user);
-    setSelectedRoomForCommit(null);
+    if (!selectedSquadForCommit) return;
+    joinSquadRoom(selectedSquadForCommit, committedMinutes, user);
+    setSelectedSquadForCommit(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Handler when user leaves/exits active room
+  // Handler when leaving active squad session
   const handleExitActiveRoom = () => {
-    leaveRoom();
-    setSelectedRoomForCommit(null);
+    leaveSquadRoom();
+    setSelectedSquadForCommit(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleCreateRoom = (e) => {
-    e.preventDefault();
-    const newRoom = {
-      id: `room-${Date.now()}`,
-      name: newRoomName || 'Silent Focus Chamber',
-      subject: newRoomSubject,
-      isPrivate: newRoomType === 'private',
-      code: newRoomType === 'private' ? (newRoomPasscode.toUpperCase() || 'REV-2025') : undefined,
-      maxMembers: newRoomType === 'private' ? 50 : 10,
-      cycleTime: newRoomCycle,
-      tag: newRoomType === 'private' ? 'Private Enclave' : 'Public Hall',
-      description: `Synchronized ${newRoomCycle} study hall for ${newRoomSubject}.`,
-      members: [
-        {
-          id: 'me',
-          name: user ? `${user.name} (You)` : 'Guest Scholar (You)',
-          avatar: user?.avatar || null,
-          level: user?.level ?? 1,
-          school: user?.title || 'Scholar',
-          studyTime: 45,
-          status: 'Studying',
-          isFriend: true
-        }
-      ],
-      messages: [
-        { id: 'm1', sender: 'System', text: `Room created by You. Protocol: ${newRoomCycle}`, time: 'Just now', isSystem: true }
-      ]
-    };
-
-    createRoom(newRoom);
-    setShowCreateModal(false);
-    setNewRoomName('');
-    setNewRoomPasscode('');
-
-    // Launch directly into commitment view for newly created room
-    setSelectedRoomForCommit(newRoom);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8 animate-fade-in-up">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-7 animate-fade-in-up">
       
-      {/* 1. ACTIVE STUDY ROOM VIEW (PERSISTENT ACROSS PAGE NAVIGATIONS) */}
+      {/* 1. ACTIVE PRIVATE GUILD SESSION (PERSISTENT ACROSS PAGE NAVIGATIONS) */}
       {activeRoomSession ? (
         <ActiveStudyRoom
           room={activeRoomSession.room}
           committedMinutes={activeRoomSession.committedMinutes}
           onExitRoom={handleExitActiveRoom}
         />
-      ) : selectedRoomForCommit ? (
+      ) : selectedSquadForCommit ? (
         /* 2. TIME COMMITMENT VIEW */
         <RoomCommitmentView
-          room={selectedRoomForCommit}
+          room={selectedSquadForCommit}
           onCommit={handleCommitAndEnter}
-          onCancel={() => setSelectedRoomForCommit(null)}
+          onCancel={() => setSelectedSquadForCommit(null)}
         />
       ) : (
-        /* 3. STUDY ROOMS LOBBY VIEW (DEFAULT) */
+        /* 3. GUILDS & RANKED ARENA MAIN FLOOR */
         <>
-          {/* Top Banner */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[rgb(var(--color-text))]">
-                Virtual Study Rooms & 1v1 Arena
-              </h1>
-              <p className="text-xs text-[rgb(var(--color-muted))] mt-1 max-w-2xl leading-relaxed">
-                Commit time to lock into synchronized study halls, chat with co-workers in real time, and challenge peers to live 1v1 topic duels.
-              </p>
+          {/* Top Hero Banner */}
+          <ArenaHeroBanner
+            onOpenDuel={() => setShowGlobalDuelModal(true)}
+            onOpenGuilds={() => setActiveTab('guilds')}
+          />
+
+          {/* Navigation Tabs Bar */}
+          <div className="flex items-center justify-between gap-3 border-b border-[rgb(var(--color-border))] pb-2 overflow-x-auto no-scrollbar">
+            <div className="inline-flex items-center gap-1.5 p-1 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
+              
+              {/* Tab 1: Private Guilds */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('guilds')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'guilds'
+                    ? 'bg-[#9e3c26] text-white shadow-sm'
+                    : 'text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))]'
+                }`}
+              >
+                <Shield size={13} />
+                <span>Private Guilds</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-white/20 font-bold hidden sm:inline">
+                  {myGuild ? 'Guild Hall' : 'Invite-Only'}
+                </span>
+              </button>
+
+              {/* Tab 2: Guild Wars */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('wars')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'wars'
+                    ? 'bg-[#9e3c26] text-white shadow-sm'
+                    : 'text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))]'
+                }`}
+              >
+                <Swords size={13} />
+                <span>Guild Wars</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-white/20 font-bold hidden sm:inline">
+                  ⭐ Season 4
+                </span>
+              </button>
+
+              {/* Tab 3: Trophy Road (CoC Leagues) */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('leagues')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'leagues'
+                    ? 'bg-[#9e3c26] text-white shadow-sm'
+                    : 'text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))]'
+                }`}
+              >
+                <Trophy size={13} />
+                <span>Trophy Road</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-white/20 font-bold hidden sm:inline">
+                  Leagues
+                </span>
+              </button>
+
+              {/* Tab 4: Titan Raid */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('boss')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'boss'
+                    ? 'bg-[#9e3c26] text-white shadow-sm'
+                    : 'text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))]'
+                }`}
+              >
+                <Heart size={13} />
+                <span>Titan Raid</span>
+              </button>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2.5">
+            {/* Quick Action Pill on Desktop */}
+            <div className="hidden md:flex items-center gap-2 text-xs font-mono">
               <button
                 onClick={() => setShowGlobalDuelModal(true)}
-                className="group px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 hover:from-indigo-500 hover:to-purple-600 dark:from-indigo-600 dark:via-purple-600 dark:to-indigo-700 dark:hover:from-indigo-500 dark:hover:to-purple-500 text-white font-semibold text-xs flex items-center gap-2 shadow-md shadow-indigo-600/25 dark:shadow-indigo-950/50 border border-indigo-500/30 dark:border-indigo-400/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#9e3c26] to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer"
               >
-                <Swords size={15} className="text-amber-300 dark:text-amber-300 group-hover:rotate-12 transition-transform duration-200" />
-                <span className="tracking-wide">Open 1v1 Arena</span>
-              </button>
-
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] dark:hover:bg-[#ffb4a3] text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-[#9e3c26]/20 transition-all cursor-pointer"
-              >
-                <Plus size={15} />
-                <span>Create Study Hall</span>
+                <Swords size={13} className="text-amber-300" />
+                <span>⚔️ 1v1 Scholar Duel Arena</span>
               </button>
             </div>
           </div>
 
-          {/* Filter and Search Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-[0_1px_8px_rgba(20,27,43,0.04)] dark:shadow-none">
-            
-            {/* Search */}
-            <div className="relative w-full sm:w-72">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search rooms or subjects..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26]"
-              />
-            </div>
+          {/* Active Tab View */}
+          <div className="pt-1">
+            {activeTab === 'guilds' && (
+              <PrivateGuildsSection onEnterChamber={handleInitiateJoin} />
+            )}
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto text-xs font-mono">
-              {['All', 'Public', 'Private', 'Organic Chemistry II', 'Linear Algebra', 'Cognitive Neuroscience', 'Macroeconomics'].map(filter => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`px-3 py-1 rounded-xl whitespace-nowrap cursor-pointer transition-colors ${
-                    activeFilter === filter
-                      ? 'bg-[#9e3c26] dark:bg-[#e26f54] text-white font-semibold shadow-xs'
-                      : 'bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))]'
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
+            {activeTab === 'wars' && (
+              <GuildWarLeaderboard />
+            )}
 
+            {activeTab === 'leagues' && (
+              <LeagueRoadView />
+            )}
+
+            {activeTab === 'boss' && (
+              <div className="space-y-6">
+                <CommunityBossBar />
+                <LeagueLeaderboard />
+              </div>
+            )}
           </div>
-
-          {/* Rooms Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredRooms.map(room => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                onJoin={handleInitiateJoin}
-              />
-            ))}
-          </div>
-
-          {filteredRooms.length === 0 && (
-            <div className="p-12 text-center rounded-2xl border border-dashed border-[rgb(var(--color-border))] bg-[rgb(var(--color-container-low))] space-y-3">
-              <Users size={32} className="mx-auto text-[rgb(var(--color-muted))]" />
-              <h3 className="font-bold text-base text-[rgb(var(--color-text))]">No matching study halls found</h3>
-              <p className="text-xs text-[rgb(var(--color-muted))]">
-                Adjust your subject filter or create a new public or private room.
-              </p>
-            </div>
-          )}
         </>
       )}
 
-      {/* Create Room Modal */}
-      {showCreateModal && (
-        <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} maxWidth="max-w-md">
-          <div className="text-center mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] mx-auto flex items-center justify-center mb-2">
-              <Users size={22} />
-            </div>
-            <h3 className="text-xl font-bold text-[rgb(var(--color-text))]">Create Study Room</h3>
-            <p className="text-xs text-[rgb(var(--color-muted))] mt-1">
-              Synchronized study space with focus timer, peer duels, and group chat
-            </p>
-          </div>
-
-          <form onSubmit={handleCreateRoom} className="space-y-4 text-left">
-            <div>
-              <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
-                Room Name
-              </label>
-              <input
-                type="text"
-                required
-                value={newRoomName}
-                onChange={(e) => setNewRoomName(e.target.value)}
-                placeholder="e.g. Organic Chem Evening Sprint"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
-                Discipline Subject
-              </label>
-              <select
-                value={newRoomSubject}
-                onChange={(e) => setNewRoomSubject(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26]"
-              >
-                <option value="Organic Chemistry II">Organic Chemistry II</option>
-                <option value="Linear Algebra">Linear Algebra</option>
-                <option value="Cognitive Neuroscience">Cognitive Neuroscience</option>
-                <option value="Macroeconomics">Macroeconomics</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
-                  Room Privacy
-                </label>
-                <select
-                  value={newRoomType}
-                  onChange={(e) => setNewRoomType(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26]"
-                >
-                  <option value="public">Public (10 Scholars Max)</option>
-                  <option value="private">Private (50 Scholars Max)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
-                  Focus Cadence
-                </label>
-                <select
-                  value={newRoomCycle}
-                  onChange={(e) => setNewRoomCycle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26]"
-                >
-                  <option value="25m Cycle">25m Standard</option>
-                  <option value="50m Deep">50m Deep</option>
-                  <option value="Silent">Pure Silent</option>
-                </select>
-              </div>
-            </div>
-
-            {newRoomType === 'private' && (
-              <div>
-                <label className="block text-xs font-mono uppercase text-[rgb(var(--color-muted))] mb-1 font-semibold">
-                  Passcode Required
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newRoomPasscode}
-                  onChange={(e) => setNewRoomPasscode(e.target.value)}
-                  placeholder="e.g. REV-7721"
-                  className="w-full px-3.5 py-2.5 font-mono text-center tracking-widest uppercase rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs text-[rgb(var(--color-text))] focus:outline-none focus:ring-1 focus:ring-[#9e3c26]"
-                />
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] dark:hover:bg-[#ffb4a3] text-white font-semibold text-xs transition-colors cursor-pointer shadow-md shadow-[#9e3c26]/20"
-            >
-              Launch Room & Commit Focus
-            </button>
-          </form>
-        </Modal>
-      )}
-
-      {/* 1v1 Global Arena Modal with Live Matchmaking */}
+      {/* 1v1 Global Arena Modal */}
       {showGlobalDuelModal && (
         <DuelModal
           isOpen={showGlobalDuelModal}

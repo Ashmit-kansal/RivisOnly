@@ -2,10 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../../components/ui/Modal';
 import ProgressBar from '../../components/ui/ProgressBar';
 import { useAuth } from '../../context/AuthContext';
-import { mockAIQuizBank } from '../../data/mockRevision';
+import { useStudyRooms } from '../../context/StudyRoomsContext';
+import { 
+  TRIVIA_SUBJECTS, 
+  fetchTriviaQuestions 
+} from '../../services/triviaApiService';
+import AntiLensQuestionCard from '../../components/quiz/AntiLensQuestionCard';
 import { 
   Swords, CheckCircle2, Clock, Sparkles, Trophy, 
-  ArrowRight, Search, Zap, ShieldCheck, RefreshCw, X
+  ArrowRight, Search, Zap, ShieldCheck, RefreshCw, X, Shield, 
+  Target, Dices, Flame, Check
 } from 'lucide-react';
 
 const SCHOLAR_POOL = [
@@ -25,87 +31,124 @@ export default function DuelModal({
   isOpen, 
   onClose, 
   opponent, 
-  isMatchmaking = false,
+  isMatchmaking = true,
   onDuelComplete 
 }) {
   const { user } = useAuth();
+  const { updateElo, currentLeague, userTrophies } = useStudyRooms();
+
+  // Subject / Topic chosen from free API
+  const [selectedSubjectId, setSelectedSubjectId] = useState(18); // Default Computer Science
+  const selectedSubject = TRIVIA_SUBJECTS.find(s => s.id === selectedSubjectId) || TRIVIA_SUBJECTS[0];
+
+  // Specific Subtopic selection
+  const [selectedSubtopicId, setSelectedSubtopicId] = useState(selectedSubject.subtopics?.[0]?.id || 'cs-all');
+  const selectedSubtopic = selectedSubject.subtopics?.find(s => s.id === selectedSubtopicId) || selectedSubject.subtopics?.[0] || { id: 'all', name: 'All Subtopics (Mixed)' };
+
+  const handleSelectSubject = (subjectId) => {
+    setSelectedSubjectId(subjectId);
+    const subj = TRIVIA_SUBJECTS.find(s => s.id === subjectId) || TRIVIA_SUBJECTS[0];
+    const defaultSub = subj.subtopics?.[0]?.id || `${subj.prefix || 'all'}-all`;
+    setSelectedSubtopicId(defaultSub);
+  };
+
   // Opponent State
   const [opponentData, setOpponentData] = useState(
-    opponent || SCHOLAR_POOL[Math.floor(Math.random() * SCHOLAR_POOL.length)]
+    opponent || SCHOLAR_POOL[0]
   );
 
-  // Duel Stages: 'searching' | 'matched' | 'lobby' | 'in-progress' | 'results'
-  const [duelStage, setDuelStage] = useState(isMatchmaking ? 'searching' : 'lobby');
+  // Duel Stages: 'select-topic' | 'searching' | 'matched' | 'in-progress' | 'results'
+  const [duelStage, setDuelStage] = useState(opponent ? 'matched' : 'select-topic');
 
   // Matchmaking Search Animation State
   const [searchCandidateIdx, setSearchCandidateIdx] = useState(0);
   const [searchTimer, setSearchTimer] = useState(0);
   const [matchCountdown, setMatchCountdown] = useState(3);
 
-  const topicsList = [
-    'Organic Chem: Electrophilic Aromatic Substitution',
-    'Organic Chem: Stereochemistry & Isomerism',
-    'Linear Algebra: Eigenvalues & Spectral Theorem',
-    'Cognitive Neuroscience: Hippocampal LTP'
-  ];
-
-  const [selectedTopic, setSelectedTopic] = useState(topicsList[0]);
-  const [opponentDecision, setOpponentDecision] = useState('accepted');
-  const [opponentProposedTopic, setOpponentProposedTopic] = useState('Organic Chem: Stereochemistry & Isomerism');
+  // Questions from Open Trivia API
+  const [questions, setQuestions] = useState([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
   // Quiz Gameplay State
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [userScore, setUserScore] = useState(0);
+  const [userPoints, setUserPoints] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
-  const [timeLeftUser, setTimeLeftUser] = useState(38.2);
-  const [timeLeftOpponent, setTimeLeftOpponent] = useState(41.0);
+  const [opponentPoints, setOpponentPoints] = useState(0);
+  const [timeLeftUser, setTimeLeftUser] = useState(45.0);
+  const [timeLeftOpponent, setTimeLeftOpponent] = useState(45.0);
 
-  const activeQuestions = mockAIQuizBank['Organic Chemistry II'] || [];
-  const currentQ = activeQuestions[currentQuestionIdx] || activeQuestions[0];
+  const currentQ = questions[currentQuestionIdx] || null;
 
-  // Reset or start matchmaking on modal open
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      if (isMatchmaking) {
-        setDuelStage('searching');
-        setSearchTimer(0);
-        setMatchCountdown(3);
-      } else if (opponent) {
+      if (opponent) {
         setOpponentData(opponent);
-        setDuelStage('lobby');
+        setDuelStage('matched');
       } else {
-        setDuelStage('lobby');
+        setDuelStage('select-topic');
       }
+      setSelectedOption(null);
+      setIsAnswered(false);
+      setUserScore(0);
+      setUserPoints(0);
+      setOpponentScore(0);
+      setOpponentPoints(0);
+      setCurrentQuestionIdx(0);
     }
-  }, [isOpen, isMatchmaking, opponent]);
+  }, [isOpen, opponent]);
 
-  // MATCHMAKING SEARCHING ANIMATION
+  // Handle topic selection and initiate matchmaking search
+  const handleStartSearching = (subjectId = selectedSubjectId, subtopicId = selectedSubtopicId) => {
+    setSelectedSubjectId(subjectId);
+    setSelectedSubtopicId(subtopicId);
+    setDuelStage('searching');
+    setSearchTimer(0);
+    setMatchCountdown(3);
+  };
+
+  // MATCHMAKING RADAR SEARCH: match player who queued for the SAME subject
   useEffect(() => {
     let cycleInterval = null;
     let finishTimeout = null;
 
     if (isOpen && duelStage === 'searching') {
-      // Rapidly cycle candidate avatars to create the searching radar scan effect
       cycleInterval = setInterval(() => {
         setSearchCandidateIdx(prev => (prev + 1) % SCHOLAR_POOL.length);
-        setSearchTimer(t => t + 0.15);
+        setSearchTimer(t => +(t + 0.15).toFixed(1));
       }, 150);
 
-      // Settle on a random opponent after 2.6 seconds
-      finishTimeout = setTimeout(() => {
+      // Match with an opponent in the same subject after ~2.2 seconds
+      finishTimeout = setTimeout(async () => {
         const randomOpponent = SCHOLAR_POOL[Math.floor(Math.random() * SCHOLAR_POOL.length)];
-        setOpponentData(randomOpponent);
+        setOpponentData({
+          ...randomOpponent,
+          matchedSubject: selectedSubject.name,
+          matchedSubtopic: selectedSubtopic.name
+        });
+
+        // Pre-fetch questions from free Open Trivia Database API / subtopic bank (0ms AI latency)
+        setIsLoadingQuestions(true);
+        const mcqs = await fetchTriviaQuestions({
+          categoryId: selectedSubject.id,
+          subtopicId: selectedSubtopic.id,
+          amount: 5
+        });
+        setQuestions(mcqs);
+        setIsLoadingQuestions(false);
+
         setDuelStage('matched');
-      }, 2600);
+      }, 2200);
     }
 
     return () => {
       if (cycleInterval) clearInterval(cycleInterval);
       if (finishTimeout) clearTimeout(finishTimeout);
     };
-  }, [isOpen, duelStage]);
+  }, [isOpen, duelStage, selectedSubject, selectedSubtopic]);
 
   // MATCHED COUNTDOWN TO DUEL START
   useEffect(() => {
@@ -115,7 +158,7 @@ export default function DuelModal({
         setMatchCountdown(c => {
           if (c <= 1) {
             clearInterval(countdownInterval);
-            handleStartDuel();
+            handleLaunchMatch();
             return 0;
           }
           return c - 1;
@@ -126,9 +169,33 @@ export default function DuelModal({
     return () => {
       if (countdownInterval) clearInterval(countdownInterval);
     };
-  }, [duelStage]);
+  }, [duelStage, questions]);
 
-  // IN-PROGRESS LIVE DUEL TIMER LOOP
+  // Launch into live questions
+  const handleLaunchMatch = async () => {
+    let activeMCQs = questions;
+    if (!activeMCQs || activeMCQs.length === 0) {
+      activeMCQs = await fetchTriviaQuestions({
+        categoryId: selectedSubject.id,
+        subtopicId: selectedSubtopic.id,
+        amount: 5
+      });
+      setQuestions(activeMCQs);
+    }
+
+    setDuelStage('in-progress');
+    setCurrentQuestionIdx(0);
+    setUserScore(0);
+    setUserPoints(0);
+    setOpponentScore(0);
+    setOpponentPoints(0);
+    setTimeLeftUser(45.0);
+    setTimeLeftOpponent(45.0);
+    setSelectedOption(null);
+    setIsAnswered(false);
+  };
+
+  // LIVE IN-PROGRESS QUESTION TIMER LOOP
   useEffect(() => {
     let interval = null;
     if (duelStage === 'in-progress' && !isAnswered && timeLeftUser > 0) {
@@ -140,45 +207,48 @@ export default function DuelModal({
     return () => clearInterval(interval);
   }, [duelStage, isAnswered, timeLeftUser]);
 
-  const handleStartDuel = () => {
-    setDuelStage('in-progress');
-    setCurrentQuestionIdx(0);
-    setUserScore(0);
-    setOpponentScore(0);
-    setTimeLeftUser(38.2);
-    setTimeLeftOpponent(41.0);
-    setSelectedOption(null);
-    setIsAnswered(false);
-  };
-
-  const handleSelectOption = (index) => {
-    if (isAnswered) return;
+  // Option selection
+  const handleSelectOption = (index, multiplier = 1) => {
+    if (isAnswered || !currentQ) return;
     setSelectedOption(index);
     setIsAnswered(true);
 
     const isCorrect = index === currentQ.correct;
     if (isCorrect) {
       setUserScore(prev => prev + 1);
+      setUserPoints(prev => prev + Math.round(100 * (multiplier || 1)));
     }
-    if (Math.random() > 0.25) {
+
+    // Dynamic opponent simulation (fair parity based on opponent's Elo)
+    const opponentAccuracyThreshold = opponentData.elo > 1800 ? 0.25 : 0.40;
+    const opponentCorrect = Math.random() > opponentAccuracyThreshold;
+    if (opponentCorrect) {
       setOpponentScore(prev => prev + 1);
+      setOpponentPoints(prev => prev + Math.round(80 + Math.random() * 35));
     }
   };
 
+  // Next question
   const handleNextQuestion = () => {
-    if (currentQuestionIdx < activeQuestions.length - 1) {
+    if (currentQuestionIdx < questions.length - 1) {
       setCurrentQuestionIdx(prev => prev + 1);
       setSelectedOption(null);
       setIsAnswered(false);
-      setTimeLeftUser(42.0);
-      setTimeLeftOpponent(44.0);
+      setTimeLeftUser(45.0);
+      setTimeLeftOpponent(45.0);
     } else {
+      // Duel finished!
+      const isWon = userPoints >= opponentPoints || (userPoints === opponentPoints && userScore >= opponentScore);
+      if (updateElo) {
+        updateElo(isWon ? 25 : -12, isWon);
+      }
       setDuelStage('results');
       if (onDuelComplete) {
         onDuelComplete({
           opponent: opponentData.name,
-          userScore: userScore + (selectedOption === currentQ.correct ? 1 : 0),
-          total: activeQuestions.length
+          userScore,
+          total: questions.length,
+          won: isWon
         });
       }
     }
@@ -189,87 +259,225 @@ export default function DuelModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
       
-      {/* 1. MATCHMAKING SEARCHING ANIMATION STAGE */}
-      {duelStage === 'searching' && (
-        <div className="py-8 px-4 text-center space-y-6 animate-fade-in-up">
+      {/* ================= 1. TOPIC SELECTION STAGE (FREE API CATEGORIES) ================= */}
+      {duelStage === 'select-topic' && (
+        <div className="space-y-6 animate-fade-in-up">
           
-          {/* Pulsating Radar Scanner Animation */}
-          <div className="relative w-36 h-36 mx-auto flex items-center justify-center">
-            {/* Concentric expanding wave rings */}
-            <div className="absolute inset-0 rounded-full border-2 border-[rgb(var(--color-primary))]/30 animate-ping [animation-duration:2s]" />
-            <div className="absolute -inset-3 rounded-full border border-indigo-500/20 animate-pulse [animation-duration:1.5s]" />
-            <div className="absolute inset-2 rounded-full bg-gradient-to-tr from-[rgb(var(--color-primary))]/10 to-indigo-500/10 blur-md" />
-            
-            {/* Center Avatar Roulette */}
-            <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-2 border-[rgb(var(--color-primary))] shadow-xl ring-4 ring-[rgb(var(--color-card))]">
-              <img
-                src={currentSearchingCandidate.avatar}
-                alt={currentSearchingCandidate.name}
-                className="w-full h-full object-cover transition-all duration-150 filter contrast-105"
-              />
-              {/* Scanline beam effect */}
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgb(var(--color-primary))]/30 to-transparent animate-bounce [animation-duration:1s]" />
+          {/* Header */}
+          <div className="flex items-center justify-between gap-3 border-b border-[rgb(var(--color-border))] pb-3">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-mono text-[#9e3c26] dark:text-[#ffb4a3] uppercase font-bold mb-1">
+                <Swords size={14} />
+                <span>MATCHMAKING QUEUE • OPEN TRIVIA DATABASE API</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-extrabold text-[rgb(var(--color-text))] tracking-tight">
+                Choose Subject for 1v1 Duel
+              </h3>
+              <p className="text-xs text-[rgb(var(--color-muted))] mt-0.5">
+                Select your competitive discipline. You will be matched against a scholar applying for the exact same subject.
+              </p>
             </div>
 
-            {/* Rotating Swords Badge */}
-            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[rgb(var(--color-primary))] text-white flex items-center justify-center shadow-md animate-spin [animation-duration:6s] z-20">
-              <Swords size={14} />
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-xs font-mono text-[rgb(var(--color-muted))]">
+              <Zap size={13} className="text-amber-500" />
+              <span>0s AI Latency</span>
             </div>
           </div>
 
-          {/* Searching Status Headings */}
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] text-xs font-mono font-bold uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-[rgb(var(--color-primary))] animate-ping" />
-              <span>Pinging Global Scholar Queue...</span>
+          {/* Grid of Free API Subjects */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+            {TRIVIA_SUBJECTS.map((subj) => {
+              const isSelected = selectedSubjectId === subj.id;
+              return (
+                <button
+                  key={subj.id}
+                  type="button"
+                  onClick={() => handleSelectSubject(subj.id)}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group ${
+                    isSelected
+                      ? `border-[#9e3c26] bg-[#9e3c26]/10 ring-2 ring-[#9e3c26]/30 shadow-xs`
+                      : 'border-[rgb(var(--color-border))] bg-[rgb(var(--color-card))] hover:bg-[rgb(var(--color-container-low))] hover:border-[#9e3c26]/40'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl">{subj.icon}</span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))]">
+                        {subj.activeScholars} online
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-xs text-[rgb(var(--color-text))] group-hover:text-[#9e3c26] dark:group-hover:text-[#ffb4a3] transition-colors flex items-center gap-1">
+                        <span className="truncate">{subj.name}</span>
+                        {isSelected && <Check size={12} className="text-[#9e3c26] dark:text-[#ffb4a3] shrink-0" />}
+                      </h4>
+                      <p className="text-[10px] text-[rgb(var(--color-muted))] line-clamp-1 mt-0.5">
+                        {subj.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 pt-1.5 border-t border-[rgb(var(--color-border))]/60 flex items-center justify-between text-[9px] font-mono text-[rgb(var(--color-muted))]">
+                    <span>{subj.subtopics?.length || 6} Subtopics</span>
+                    <span className={isSelected ? 'text-[#9e3c26] dark:text-[#ffb4a3] font-bold' : ''}>
+                      {isSelected ? 'Active ●' : 'Select'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* STEP 2: CHOOSE SPECIFIC SUBTOPIC */}
+          <div className="p-4 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{selectedSubject.icon}</span>
+                <div>
+                  <h4 className="text-xs font-bold font-mono uppercase tracking-wider text-[rgb(var(--color-text))] flex items-center gap-2">
+                    <span>Specific Subtopics in {selectedSubject.name}</span>
+                    <span className="text-[10px] font-normal px-2 py-0.2 rounded-full bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))]">
+                      Optional Focus
+                    </span>
+                  </h4>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono text-[rgb(var(--color-muted))]">
+                Selected: <strong className="text-[rgb(var(--color-text))]">{selectedSubtopic.name}</strong>
+              </span>
             </div>
 
-            <h3 className="text-2xl font-extrabold text-[rgb(var(--color-text))] tracking-tight">
-              Finding 1v1 Arena Opponent
-            </h3>
-
-            {/* Candidate stream preview */}
-            <div className="text-xs font-mono text-[rgb(var(--color-muted))] h-5">
-              Evaluating: <span className="font-bold text-[rgb(var(--color-text))]">{currentSearchingCandidate.name}</span> ({currentSearchingCandidate.school} • Elo {currentSearchingCandidate.elo})
+            {/* Subtopics Grid Pills */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {selectedSubject.subtopics?.map((sub) => {
+                const isSubSelected = selectedSubtopicId === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => setSelectedSubtopicId(sub.id)}
+                    className={`px-3 py-2 rounded-xl border text-xs text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                      isSubSelected
+                        ? 'bg-[#9e3c26] text-white border-[#9e3c26] font-bold shadow-xs'
+                        : 'bg-[rgb(var(--color-card))] hover:bg-[rgb(var(--color-container))] border-[rgb(var(--color-border))] text-[rgb(var(--color-text))]'
+                    }`}
+                  >
+                    <span className="truncate">{sub.name}</span>
+                    {isSubSelected && <Check size={14} className="shrink-0 text-white ml-1" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Queue Statistics Badges */}
-          <div className="grid grid-cols-3 gap-2.5 max-w-sm mx-auto text-xs font-mono">
-            <div className="p-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
-              <div className="text-[9px] text-[rgb(var(--color-muted))] uppercase">QUEUED</div>
-              <div className="font-bold text-[rgb(var(--color-text))]">1,420</div>
+          {/* Matchmaking Info Strip */}
+          <div className="p-3.5 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-[rgb(var(--color-muted))]">
+              <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+              <span>
+                Equalized Matchmaking: Both players match in <strong>{selectedSubject.name}</strong> for <strong>{selectedSubtopic.name}</strong>.
+              </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
-              <div className="text-[9px] text-[rgb(var(--color-muted))] uppercase">EST. WAIT</div>
-              <div className="font-bold text-[rgb(var(--color-primary))]">~2.5s</div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
-              <div className="text-[9px] text-[rgb(var(--color-muted))] uppercase">PARITY</div>
-              <div className="font-bold text-emerald-500">±50 Elo</div>
-            </div>
-          </div>
 
-          {/* Cancel Search Button */}
-          <div className="pt-2">
             <button
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-xs font-medium text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors cursor-pointer"
+              type="button"
+              onClick={() => handleStartSearching(selectedSubjectId, selectedSubtopicId)}
+              className="px-6 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#9e3c26]/20 transition-all cursor-pointer shrink-0"
             >
-              Cancel Matchmaking
+              <Swords size={14} />
+              <span>Duel in {selectedSubtopic.name}</span>
+              <ArrowRight size={13} />
             </button>
           </div>
 
         </div>
       )}
 
-      {/* 2. MATCH FOUND & PAIRED CELEBRATION STAGE */}
+      {/* ================= 2. MATCHMAKING SEARCHING RADAR STAGE ================= */}
+      {duelStage === 'searching' && (
+        <div className="py-8 px-4 text-center space-y-6 animate-fade-in-up">
+          
+          {/* Radar Scanner Animation */}
+          <div className="relative w-36 h-36 mx-auto flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-2 border-[#9e3c26]/30 animate-ping [animation-duration:2s]" />
+            <div className="absolute -inset-3 rounded-full border border-indigo-500/20 animate-pulse [animation-duration:1.5s]" />
+            <div className="absolute inset-2 rounded-full bg-gradient-to-tr from-[#9e3c26]/10 to-indigo-500/10 blur-md" />
+            
+            <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-2 border-[#9e3c26] shadow-xl ring-4 ring-[rgb(var(--color-card))]">
+              <img
+                src={currentSearchingCandidate.avatar}
+                alt={currentSearchingCandidate.name}
+                className="w-full h-full object-cover transition-all duration-150 filter contrast-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#9e3c26]/30 to-transparent animate-bounce [animation-duration:1s]" />
+            </div>
+
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#9e3c26] text-white flex items-center justify-center shadow-md animate-spin [animation-duration:6s] z-20">
+              <Swords size={14} />
+            </div>
+          </div>
+
+          {/* Searching Status Headings */}
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] text-xs font-mono font-bold uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-[#9e3c26] animate-ping" />
+              <span>Scanning Queue for: {selectedSubject.name}</span>
+            </div>
+
+            <h3 className="text-2xl font-extrabold text-[rgb(var(--color-text))] tracking-tight">
+              Matching Scholars in {selectedSubject.name}
+            </h3>
+
+            <div className="flex items-center justify-center gap-2 text-xs font-mono text-[rgb(var(--color-muted))]">
+              <span>Target Subtopic:</span>
+              <strong className="text-[rgb(var(--color-text))] px-2 py-0.5 rounded-md bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
+                {selectedSubtopic.name}
+              </strong>
+            </div>
+
+            <div className="text-xs font-mono text-[rgb(var(--color-muted))] h-5 pt-1">
+              Checking: <span className="font-bold text-[rgb(var(--color-text))]">{currentSearchingCandidate.name}</span> ({currentSearchingCandidate.school} • Elo {currentSearchingCandidate.elo})
+            </div>
+          </div>
+
+          {/* Queue Statistics Badges */}
+          <div className="grid grid-cols-3 gap-2.5 max-w-md mx-auto text-xs font-mono">
+            <div className="p-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
+              <div className="text-[9px] text-[rgb(var(--color-muted))] uppercase">SUBJECT</div>
+              <div className="font-bold text-[rgb(var(--color-text))] truncate">{selectedSubject.name}</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
+              <div className="text-[9px] text-[rgb(var(--color-muted))] uppercase">SUBTOPIC</div>
+              <div className="font-bold text-[#9e3c26] dark:text-[#ffb4a3] truncate">{selectedSubtopic.name}</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
+              <div className="text-[9px] text-[rgb(var(--color-muted))] uppercase">LATENCY</div>
+              <div className="font-bold text-emerald-500">0ms (Instant)</div>
+            </div>
+          </div>
+
+          {/* Cancel Search Button */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setDuelStage('select-topic')}
+              className="px-5 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] border border-[rgb(var(--color-border))] text-xs font-medium text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors cursor-pointer"
+            >
+              Change Subject / Subtopic
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* ================= 3. MATCH FOUND & PAIRED STAGE ================= */}
       {duelStage === 'matched' && (
         <div className="py-8 px-4 text-center space-y-6 animate-fade-in-up">
           
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-bold uppercase tracking-widest border border-emerald-500/30 animate-pulse">
             <Sparkles size={14} />
-            <span>⚔️ MATCH FOUND & PAIRED!</span>
+            <span>⚔️ MATCH CONFIRMED ON SAME SUBJECT!</span>
           </div>
 
           {/* Versus Showcase */}
@@ -277,23 +485,23 @@ export default function DuelModal({
             
             {/* YOU */}
             <div className="flex flex-col items-center space-y-2">
-              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-[rgb(var(--color-primary))] text-white font-extrabold flex items-center justify-center text-xl shadow-lg ring-4 ring-[rgb(var(--color-card))]">
+              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-[#9e3c26] text-white font-extrabold flex items-center justify-center text-xl shadow-lg ring-4 ring-[rgb(var(--color-card))]">
                 YOU
               </div>
               <div>
                 <div className="font-bold text-sm text-[rgb(var(--color-text))]">{user?.name || 'You'}</div>
-                <div className="text-[11px] font-mono text-[rgb(var(--color-muted))]">Elo {user?.eloRating ?? 1200} • Lv. {user?.level ?? 1}</div>
+                <div className="text-[11px] font-mono text-[rgb(var(--color-muted))]">Elo {user?.eloRating ?? 1200}</div>
               </div>
             </div>
 
             {/* VS Badge */}
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] flex items-center justify-center font-black font-mono text-xs text-[rgb(var(--color-primary))] shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] flex items-center justify-center font-black font-mono text-xs text-[#9e3c26] dark:text-[#ffb4a3] shadow-sm">
                 VS
               </div>
             </div>
 
-            {/* PAIRED RANDOM OPPONENT */}
+            {/* MATCHED OPPONENT */}
             <div className="flex flex-col items-center space-y-2">
               <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 ring-emerald-500/50 border border-[rgb(var(--color-border))]">
                 <img
@@ -316,210 +524,55 @@ export default function DuelModal({
 
           <div className="space-y-1">
             <p className="text-xs text-[rgb(var(--color-muted))] font-mono">
-              Synchronized 10-question dynamic dual quiz loaded.
+              Matched in <strong className="text-[rgb(var(--color-text))]">{selectedSubject.name}</strong> • Focus: <strong className="text-[#9e3c26] dark:text-[#ffb4a3]">{selectedSubtopic.name}</strong> • Synchronized 5 MCQs loaded.
             </p>
-            <div className="text-sm font-bold font-mono text-[rgb(var(--color-primary))]">
-              Arena launching in {matchCountdown}s...
+            <div className="text-sm font-bold font-mono text-[#9e3c26] dark:text-[#ffb4a3]">
+              Duel begins in {matchCountdown}s...
             </div>
           </div>
 
           {/* Quick Enter Action */}
           <div className="pt-2">
             <button
-              onClick={handleStartDuel}
-              className="px-8 py-3 rounded-2xl bg-[rgb(var(--color-primary))] hover:brightness-105 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 mx-auto shadow-lg shadow-[rgb(var(--color-primary))]/25 transition-all cursor-pointer"
+              type="button"
+              onClick={handleLaunchMatch}
+              className="px-8 py-3 rounded-2xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-bold text-xs sm:text-sm flex items-center gap-2 mx-auto shadow-lg shadow-[#9e3c26]/25 transition-all cursor-pointer"
             >
               <Swords size={16} />
-              <span>Start 1v1 Duel Now</span>
+              <span>Start 1v1 Duel Immediately</span>
             </button>
           </div>
 
         </div>
       )}
 
-      {/* 3. LOBBY STAGE (When directly challenging a peer) */}
-      {duelStage === 'lobby' && (
-        <div className="space-y-6 animate-fade-in-up">
-          
-          {/* Header Title with Stakes badge */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] flex items-center justify-center font-bold">
-              <Swords size={18} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-bold tracking-tight text-[rgb(var(--color-text))]">1v1 Practice Duel Arena</h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#9e3c26] dark:bg-[#e26f54] text-white tracking-wider uppercase">
-                  Live Stakes
-                </span>
-              </div>
-              <p className="text-xs text-[rgb(var(--color-muted))]">
-                Real-time synchronized spaced-repetition challenge
-              </p>
-            </div>
-          </div>
-
-          {/* Versus Header Box matching screenshot */}
-          <div className="p-4 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center -space-x-2">
-                <div className="w-10 h-10 rounded-full bg-[#9e3c26] dark:bg-[#e26f54] text-white flex items-center justify-center text-xs font-bold ring-2 ring-[rgb(var(--color-card))]">
-                  YOU
-                </div>
-                <div className="text-xs font-bold text-[rgb(var(--color-muted))] px-1 z-10">VS</div>
-                <img
-                  src={opponentData.avatar}
-                  alt={opponentData.name}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[rgb(var(--color-card))]"
-                />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-[rgb(var(--color-text))] flex items-center gap-1.5">
-                  <span>Challenging</span>
-                  <span className="text-[#9e3c26] dark:text-[#ffb4a3] font-bold">{opponentData.name}</span>
-                </div>
-                <div className="text-xs text-[rgb(var(--color-muted))]">
-                  Stakes: <strong className="text-[rgb(var(--color-secondary))] font-mono">+50 Elo rating</strong> to victor • Permanent combat record logged in vault
-                </div>
-              </div>
-            </div>
-
-            {/* Opponent Protocol badge */}
-            <div className="p-2.5 rounded-xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] text-right text-[11px] font-mono shadow-xs">
-              <div className="text-[10px] text-[rgb(var(--color-muted))] uppercase font-semibold">OPPONENT PROTOCOL</div>
-              <div className="flex items-center gap-1.5 text-[rgb(var(--color-secondary))] font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-secondary))] animate-pulse" />
-                <span>Can accept OR propose topic</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Challenger Deck Source & AI Engine Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* Note Deck Source */}
-            <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-xs">
-              <div className="flex items-center justify-between text-xs font-mono mb-2">
-                <span className="text-[10px] uppercase text-[rgb(var(--color-muted))] font-semibold">CHALLENGER DECK SOURCE</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-[rgb(var(--color-secondary-container))] text-[rgb(var(--color-secondary))] font-bold">
-                  Validated Vault Note
-                </span>
-              </div>
-              
-              <h4 className="font-semibold text-sm text-[rgb(var(--color-text))] mb-1">
-                {selectedTopic}
-              </h4>
-              <p className="text-xs text-[rgb(var(--color-muted))] mb-3">
-                Extracted from 42 scanned notes & syllabus flashcard decks with ortho/para directing rules.
-              </p>
-
-              <div className="mb-2">
-                <div className="flex justify-between text-[11px] font-mono text-[rgb(var(--color-muted))] mb-1">
-                  <span>Your Deck Mastery & Retention Score</span>
-                  <span className="font-bold text-[rgb(var(--color-secondary))]">84% Solid</span>
-                </div>
-                <ProgressBar value={84} color="bg-emerald-500" height="h-1.5" />
-              </div>
-
-              <div className="flex items-center justify-between text-xs pt-2">
-                <span className="text-[11px] font-mono text-[rgb(var(--color-muted))]">42 Pages Scanned</span>
-                <button
-                  onClick={() => {
-                    const nextIndex = (topicsList.indexOf(selectedTopic) + 1) % topicsList.length;
-                    setSelectedTopic(topicsList[nextIndex]);
-                  }}
-                  className="text-xs text-[#9e3c26] dark:text-[#ffb4a3] hover:underline font-semibold cursor-pointer"
-                >
-                  Change Note Source ▾
-                </button>
-              </div>
-            </div>
-
-            {/* AI Evaluation Engine Card */}
-            <div className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] shadow-xs">
-              <div className="flex items-center justify-between text-xs font-mono mb-2">
-                <span className="text-[10px] uppercase text-[rgb(var(--color-muted))] font-semibold">AI EVALUATION ENGINE</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-[rgb(var(--color-tertiary-container))] text-[rgb(var(--color-tertiary))] font-bold">
-                  GPT-4o Diagnostic
-                </span>
-              </div>
-
-              <h4 className="font-semibold text-sm text-[rgb(var(--color-text))] mb-1">
-                10-Question Dynamic Dual Eval
-              </h4>
-              <p className="text-xs text-[rgb(var(--color-muted))] mb-3">
-                Generates edge-case mechanism traps. Score calculated on <strong>Precision (60%)</strong> + <strong>Response Velocity (40%)</strong>.
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="p-2 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-center">
-                  <div className="text-[9px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold">SPEED LIMIT</div>
-                  <div className="text-xs font-bold text-[#9e3c26] dark:text-[#ffb4a3] font-mono">45s / Question</div>
-                </div>
-                <div className="p-2 rounded-xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] text-center">
-                  <div className="text-[9px] font-mono uppercase text-[rgb(var(--color-muted))] font-semibold">DIFFICULTY</div>
-                  <div className="text-xs font-bold text-[rgb(var(--color-tertiary))] font-mono">Tier IV Senior</div>
-                </div>
-              </div>
-
-              <div className="text-[10px] font-mono text-[rgb(var(--color-muted))] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-secondary))]" />
-                <span>Format: Multi-Choice + Mechanism Step Anti-Cheat Active</span>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Action Button */}
-          <div className="flex items-center justify-between pt-2">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-[rgb(var(--color-border))] text-xs font-medium text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-container-low))] transition-colors cursor-pointer"
-            >
-              Cancel Challenge
-            </button>
-
-            <button
-              onClick={handleStartDuel}
-              className="px-7 py-3 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] dark:hover:bg-[#ffb4a3] text-white font-semibold text-sm flex items-center gap-2 shadow-md shadow-[#9e3c26]/25 transition-all cursor-pointer"
-            >
-              <Swords size={16} />
-              <span>Initiate 1v1 Sprint</span>
-            </button>
-          </div>
-
-        </div>
-      )}
-
-      {/* 4. IN-PROGRESS QUIZ STAGE (SAME FORMAT) */}
-      {duelStage === 'in-progress' && (
+      {/* ================= 4. IN-PROGRESS LIVE 1V1 DUEL ================= */}
+      {duelStage === 'in-progress' && currentQ && (
         <div className="space-y-5 animate-fade-in-up">
           
           {/* Question Banner & Real-time Live Timers */}
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[rgb(var(--color-border))]">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-md bg-[#9e3c26] dark:bg-[#e26f54] text-white text-xs font-mono font-bold uppercase">
-                QUESTION {currentQuestionIdx + 1} OF {activeQuestions.length}
+                QUESTION {currentQuestionIdx + 1} OF {questions.length}
               </span>
               <span className="text-xs font-mono text-[rgb(var(--color-muted))]">
-                Organic Chemistry Recall Arena
+                {selectedSubject.name} • <span className="text-[rgb(var(--color-text))] font-bold">{selectedSubtopic.name}</span>
               </span>
             </div>
 
-            {/* Synchronized Timers: YOU vs OPPONENT */}
+            {/* Split Live Scores: YOU vs OPPONENT */}
             <div className="flex items-center gap-3 text-xs font-mono">
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#9e3c26]/10 dark:bg-[#e26f54]/15 text-[#9e3c26] dark:text-[#ffb4a3] font-bold">
-                <span>YOU:</span>
-                <span>00:{String(Math.floor(timeLeftUser)).padStart(2, '0')}.{Math.floor((timeLeftUser % 1) * 10)}</span>
+                <span>YOU: {userScore} / {questions.length} ({userPoints} pts)</span>
               </div>
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-muted))] font-bold border border-[rgb(var(--color-border))]">
-                <span>{opponentData.name.split(' ')[0].toUpperCase()}:</span>
-                <span>00:{String(Math.floor(timeLeftOpponent)).padStart(2, '0')}.{Math.floor((timeLeftOpponent % 1) * 10)}</span>
+                <span>{opponentData.name.split(' ')[0].toUpperCase()}: {opponentScore} / {questions.length} ({opponentPoints} pts)</span>
               </div>
             </div>
           </div>
 
-          {/* Animated Time Progress */}
+          {/* Time Progress */}
           <ProgressBar
             value={timeLeftUser}
             max={45}
@@ -527,78 +580,29 @@ export default function DuelModal({
             color={timeLeftUser < 10 ? 'bg-red-500' : 'bg-[#9e3c26] dark:bg-[#e26f54]'}
           />
 
-          {/* Question Box */}
-          <div className="p-5 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))]">
-            <h3 className="text-base sm:text-lg font-semibold text-[rgb(var(--color-text))] leading-relaxed">
-              {currentQ.question}
-            </h3>
-          </div>
+          {/* ANTI-LENS PROTECTED QUESTION CARD */}
+          <AntiLensQuestionCard
+            question={currentQ.question}
+            options={currentQ.options}
+            correctIndex={currentQ.correct}
+            explanation={currentQ.explanation}
+            selectedOption={selectedOption}
+            onSelectOption={(idx, multiplier) => handleSelectOption(idx, multiplier)}
+            topicName={`${selectedSubject.name} — ${selectedSubtopic.name}`}
+            questionNumber={currentQuestionIdx + 1}
+            totalQuestions={questions.length}
+            speedBonusActive={true}
+          />
 
-          {/* Options Grid (A, B, C, D) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {currentQ.options.map((opt, idx) => {
-              const letter = String.fromCharCode(65 + idx);
-              const isChosen = selectedOption === idx;
-              const isCorrect = idx === currentQ.correct;
-              
-              let cardStyle = 'border-[rgb(var(--color-border))] hover:border-[#9e3c26]/40 bg-[rgb(var(--color-card))] shadow-xs';
-              if (isAnswered) {
-                if (isCorrect) {
-                  cardStyle = 'border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300';
-                } else if (isChosen) {
-                  cardStyle = 'border-red-500 bg-red-500/10 text-red-800 dark:text-red-300';
-                } else {
-                  cardStyle = 'opacity-50 border-[rgb(var(--color-border))] bg-[rgb(var(--color-card))]';
-                }
-              }
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleSelectOption(idx)}
-                  disabled={isAnswered}
-                  className={`p-4 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${cardStyle}`}
-                >
-                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold text-xs shrink-0 ${
-                    isAnswered && isCorrect
-                      ? 'bg-emerald-500 text-white'
-                      : isChosen
-                      ? 'bg-red-500 text-white'
-                      : 'bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-text))]'
-                  }`}>
-                    {letter}
-                  </span>
-                  <span className="text-xs leading-relaxed">{opt}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Explanation Box on Answer */}
-          {isAnswered && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs animate-fade-in-up space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-emerald-700 dark:text-emerald-300 font-mono uppercase">
-                  {selectedOption === currentQ.correct ? '✓ Correct Mechanism' : '✕ Precision Error'}
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-mono text-[10px] font-bold">
-                  +15% Retention
-                </span>
-              </div>
-              <p className="text-[rgb(var(--color-text))] leading-relaxed">
-                {currentQ.explanation}
-              </p>
-            </div>
-          )}
-
-          {/* Next / Continue Controls */}
+          {/* Next Controls */}
           {isAnswered && (
             <div className="flex justify-end pt-2">
               <button
+                type="button"
                 onClick={handleNextQuestion}
-                className="px-6 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] dark:hover:bg-[#ffb4a3] text-white font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-6 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm"
               >
-                <span>{currentQuestionIdx < activeQuestions.length - 1 ? 'Next Duel Question' : 'Complete 1v1 Duel'}</span>
+                <span>{currentQuestionIdx < questions.length - 1 ? 'Next Duel Question' : 'Complete 1v1 Duel'}</span>
                 <ArrowRight size={14} />
               </button>
             </div>
@@ -607,7 +611,7 @@ export default function DuelModal({
         </div>
       )}
 
-      {/* 5. RESULTS STAGE (SAME FORMAT) */}
+      {/* ================= 5. RESULTS STAGE ================= */}
       {duelStage === 'results' && (
         <div className="text-center space-y-6 py-4 animate-fade-in-up">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3]">
@@ -616,15 +620,15 @@ export default function DuelModal({
 
           <div>
             <span className="text-xs font-mono uppercase tracking-widest text-[#9e3c26] dark:text-[#ffb4a3] font-bold">
-              DUEL CONCLUDED
+              1V1 DUEL CONCLUDED • {selectedSubject.name.toUpperCase()} ({selectedSubtopic.name.toUpperCase()})
             </span>
-            <h3 className="text-3xl font-bold tracking-tight text-[rgb(var(--color-text))] mt-1">
-              {userScore >= opponentScore ? 'Victory!' : 'Defeat!'}
+            <h3 className="text-3xl font-extrabold tracking-tight text-[rgb(var(--color-text))] mt-1">
+              {userPoints >= opponentPoints ? '🏆 Victory!' : '⚔️ Defeat!'}
             </h3>
-            <p className="text-xs text-[rgb(var(--color-muted))] mt-1">
-              {userScore >= opponentScore
-                ? '+24 Elo Rating added to your Global Scholar Profile'
-                : '-12 Elo adjustment applied'}
+            <p className="text-xs text-[rgb(var(--color-muted))] mt-1 font-mono">
+              {userPoints >= opponentPoints
+                ? '+25 Elo Rating & +18 Trophies added to your profile'
+                : '-12 Elo adjustment recorded'}
             </p>
           </div>
 
@@ -632,39 +636,53 @@ export default function DuelModal({
           <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
             <div className="p-4 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] shadow-xs">
               <div className="text-xs font-mono text-[rgb(var(--color-muted))]">YOUR SCORE</div>
-              <div className="text-3xl font-bold font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1">{userScore} / {activeQuestions.length}</div>
-              <div className="text-[11px] text-[rgb(var(--color-secondary))] font-mono mt-1">Avg 2.8s response</div>
+              <div className="text-2xl sm:text-3xl font-bold font-mono text-[#9e3c26] dark:text-[#ffb4a3] mt-1">
+                {userScore} / {questions.length}
+              </div>
+              <div className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+                {userPoints} Battle Points
+              </div>
             </div>
             <div className="p-4 rounded-2xl bg-[rgb(var(--color-container-low))] border border-[rgb(var(--color-border))] shadow-xs">
-              <div className="text-xs font-mono text-[rgb(var(--color-muted))]">{opponentData.name.toUpperCase()}</div>
-              <div className="text-3xl font-bold font-mono text-[rgb(var(--color-muted))] mt-1">{opponentScore} / {activeQuestions.length}</div>
-              <div className="text-[11px] text-[rgb(var(--color-muted))] font-mono mt-1">Avg 3.1s response</div>
+              <div className="text-xs font-mono text-[rgb(var(--color-muted))] truncate">{opponentData.name.toUpperCase()}</div>
+              <div className="text-2xl sm:text-3xl font-bold font-mono text-[rgb(var(--color-muted))] mt-1">
+                {opponentScore} / {questions.length}
+              </div>
+              <div className="text-xs font-mono text-[rgb(var(--color-muted))] mt-1">
+                {opponentPoints} Battle Points
+              </div>
             </div>
           </div>
 
-          <div className="max-w-md mx-auto">
-            <div className="flex justify-between text-xs font-mono text-[rgb(var(--color-muted))] mb-1.5">
-              <span>Overall Spaced Recall Accuracy</span>
-              <span className="font-bold text-[rgb(var(--color-text))]">{Math.round((userScore / activeQuestions.length) * 100)}%</span>
-            </div>
-            <ProgressBar value={userScore} max={activeQuestions.length} color="bg-[#9e3c26] dark:bg-[#e26f54]" height="h-2.5" />
-          </div>
-
-          <div className="flex items-center justify-center gap-3 pt-4">
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
             <button
-              onClick={() => setDuelStage('searching')}
-              className="px-5 py-2.5 rounded-xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-card))] text-xs font-medium text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-container-low))] transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+              type="button"
+              onClick={() => handleStartSearching(selectedSubjectId, selectedSubtopicId)}
+              className="px-5 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white text-xs font-semibold shadow-md shadow-[#9e3c26]/20 cursor-pointer flex items-center gap-1.5"
             >
               <RefreshCw size={13} />
-              <span>Find New Opponent</span>
+              <span>Rematch in {selectedSubtopic.name}</span>
             </button>
+
             <button
-              onClick={onClose}
-              className="px-6 py-2.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] dark:hover:bg-[#ffb4a3] text-white font-medium text-xs shadow-md shadow-[#9e3c26]/20 cursor-pointer"
+              type="button"
+              onClick={() => setDuelStage('select-topic')}
+              className="px-5 py-2.5 rounded-xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-xs font-medium text-[rgb(var(--color-text))] transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              Return to Study Room
+              <Dices size={13} />
+              <span>Change Subject / Subtopic</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl border border-[rgb(var(--color-border))] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] text-xs font-medium cursor-pointer"
+            >
+              Return to Arena
             </button>
           </div>
+
         </div>
       )}
 

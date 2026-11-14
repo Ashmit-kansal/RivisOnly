@@ -1,40 +1,26 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import { useAuth } from '../../context/AuthContext';
-import { LogIn, Sparkles, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
+import { LogIn, ShieldCheck, AlertCircle, Sparkles, FolderSync, Brain } from 'lucide-react';
 
 export default function LoginModal() {
-  const { showLogin, setShowLogin, setShowSignup, login, loginAsDemo } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const { showLogin, setShowLogin, loginWithGoogle } = useAuth();
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleGoogleSignIn = async () => {
     setError('');
-    setLoading(true);
-
+    setGoogleLoading(true);
     try {
-      const res = await login(email, password);
+      const res = await loginWithGoogle();
       if (!res.success) {
-        setError(res.error || 'Authentication failed. Please verify credentials.');
-      } else {
-        setEmail('');
-        setPassword('');
-        setError('');
+        setError(res.error || 'Google Sign-in was not completed.');
       }
     } catch {
-      setError('An unexpected error occurred. Please try again.');
+      setError('An error occurred during Google sign-in.');
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
-  };
-
-  const handleQuickDemo = () => {
-    setError('');
-    loginAsDemo();
   };
 
   const handleClose = () => {
@@ -45,117 +31,61 @@ export default function LoginModal() {
   return (
     <Modal isOpen={showLogin} onClose={handleClose} maxWidth="max-w-md">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] mb-3">
-          <LogIn size={22} />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] mb-3.5 shadow-inner">
+          <LogIn size={26} />
         </div>
-        <h3 className="text-2xl font-bold tracking-tight text-[rgb(var(--color-text))]">Welcome Back</h3>
-        <p className="text-sm text-[rgb(var(--color-muted))] mt-1">
-          Access your architectural study vault and synced sessions
+        <h3 className="text-2xl font-bold tracking-tight text-[rgb(var(--color-text))]">
+          Welcome to Rivisonly
+        </h3>
+        <p className="text-xs sm:text-sm text-[rgb(var(--color-muted))] mt-1.5 leading-relaxed">
+          Sign in to access your synchronized study rooms, revision duels, and Google Drive notes.
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 animate-fade-in">
+        <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 animate-fade-in">
           <AlertCircle size={15} className="shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] mb-1.5">
-            Academic Email
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))]" size={16} />
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setError(''); }}
-              placeholder="e.g. arjun@rivisonly.app or your email"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))] text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/30 focus:border-[rgb(var(--color-primary))]"
-              autoFocus
-            />
-          </div>
-        </div>
-
-        <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label className="block text-xs font-mono uppercase tracking-wider text-[rgb(var(--color-muted))]">
-              Master Password
-            </label>
-            <span className="text-[11px] text-[rgb(var(--color-muted))] font-mono">
-              demo: <code className="bg-[rgb(var(--color-container-low))] px-1 py-0.5 rounded text-[rgb(var(--color-text))]">password123</code>
-            </span>
-          </div>
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))]" size={16} />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              placeholder="Enter your password"
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))] text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/30 focus:border-[rgb(var(--color-primary))]"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] cursor-pointer p-1"
-              title={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full mt-2 py-3 rounded-xl bg-[rgb(var(--color-primary))] hover:brightness-105 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-[rgb(var(--color-primary))]/20 transition-all cursor-pointer active:scale-[0.99]"
-        >
-          {loading ? 'Authenticating Vault...' : 'Enter Focus Studio'}
-          <ArrowRight size={16} />
-        </button>
-
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[rgb(var(--color-border))]" />
-          </div>
-          <div className="relative flex justify-center text-[10px] font-mono uppercase tracking-wider">
-            <span className="bg-[rgb(var(--color-card))] px-2 text-[rgb(var(--color-muted))]">OR</span>
-          </div>
-        </div>
-
+      {/* 1-Click Google Sign In Button */}
+      <div className="space-y-4">
         <button
           type="button"
-          onClick={handleQuickDemo}
-          className="w-full py-2.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container-high))] text-[rgb(var(--color-text))] font-medium text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-[rgb(var(--color-border))]"
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading}
+          className="w-full py-3 px-4 rounded-xl border border-[rgb(var(--color-border))] bg-white dark:bg-[rgb(var(--color-container-low))] hover:bg-slate-50 dark:hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-sm flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50"
         >
-          <Sparkles size={14} className="text-[rgb(var(--color-primary))]" />
-          Instant Demo Sign In (Arjun Sharma • Lv. 14)
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+          </svg>
+          <span>{googleLoading ? 'Connecting to Google...' : 'Continue with Google'}</span>
         </button>
-      </form>
 
-      <div className="mt-6 pt-5 border-t border-[rgb(var(--color-border))] text-center text-xs text-[rgb(var(--color-muted))]">
-        Don't have a scholar vault yet?{' '}
-        <button
-          type="button"
-          onClick={() => {
-            setError('');
-            setShowLogin(false);
-            setShowSignup(true);
-          }}
-          className="text-[rgb(var(--color-primary))] font-semibold hover:underline cursor-pointer"
-        >
-          Create an Account
-        </button>
+        {/* Feature Highlights */}
+        <div className="pt-2 space-y-2 border-t border-[rgb(var(--color-border))]/60">
+          <div className="flex items-center gap-2.5 text-xs text-[rgb(var(--color-muted))]">
+            <FolderSync size={14} className="text-[#9e3c26] dark:text-[#ffb4a3] shrink-0" />
+            <span>Direct Google Drive integration for your lecture notes & PDFs</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-[rgb(var(--color-muted))]">
+            <Brain size={14} className="text-[rgb(var(--color-secondary))] shrink-0" />
+            <span>Automated AI summaries, quiz generation, and active recall duels</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-[rgb(var(--color-muted))]">
+            <Sparkles size={14} className="text-amber-500 shrink-0" />
+            <span>Zero passwords to manage • Institutional Google Workspace supported</span>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-[rgb(var(--color-muted))]">
+      <div className="mt-6 pt-4 border-t border-[rgb(var(--color-border))] flex items-center justify-center gap-1.5 text-[11px] text-[rgb(var(--color-muted))]">
         <ShieldCheck size={13} className="text-emerald-500" />
-        <span>End-to-end encrypted academic repository sync</span>
+        <span>End-to-end encrypted academic sync</span>
       </div>
     </Modal>
   );
