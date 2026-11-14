@@ -39,7 +39,7 @@ export function getEffectiveGeminiKey() {
     console.warn('Could not read user key from localStorage:', err);
   }
 
-  const appKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const appKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
   if (appKey && appKey.trim().length > 5) {
     return appKey.trim();
   }
