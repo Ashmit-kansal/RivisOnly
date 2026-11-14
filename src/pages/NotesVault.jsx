@@ -14,7 +14,7 @@ import {
 
 export default function NotesVault() {
   const navigate = useNavigate();
-  const { user, driveToken, requestDriveAccess, setShowLogin } = useAuth();
+  const { user, driveToken, requestDriveAccess, disconnectDrive, setShowLogin } = useAuth();
   const { generateKeyPoints, generateQuiz, hasCustomKey, setShowAISettingsModal, isGenerating } = useAI();
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -136,9 +136,18 @@ export default function NotesVault() {
 
           {!driveToken ? (
             <button
-              onClick={() => {
-                if (!user) setShowLogin(true);
-                else requestDriveAccess();
+              onClick={async () => {
+                if (!user) {
+                  setShowLogin(true);
+                  return;
+                }
+                const res = await requestDriveAccess();
+                if (res.success) {
+                  showToast('Google Drive connected successfully!', 'success');
+                  setExplorerRefreshKey(k => k + 1);
+                } else if (res.error) {
+                  showToast(res.error, 'error');
+                }
               }}
               className="px-3.5 py-1.5 rounded-xl bg-[#9e3c26] hover:bg-[#be543c] dark:bg-[#e26f54] text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-[#9e3c26]/25 cursor-pointer transition-all"
             >
@@ -146,16 +155,47 @@ export default function NotesVault() {
               <span>Connect Google Drive</span>
             </button>
           ) : (
-            <a
-              href="https://drive.google.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-medium text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Open Google Drive in new tab"
-            >
-              <ExternalLink size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
-              <span>drive.google.com</span>
-            </a>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  const res = await requestDriveAccess();
+                  if (res.success) {
+                    showToast('Google Drive re-authenticated!', 'success');
+                    setExplorerRefreshKey(k => k + 1);
+                  } else if (res.error) {
+                    showToast(res.error, 'error');
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-semibold text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Re-authenticate or grant additional Google Drive permissions"
+              >
+                <Sparkles size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
+                <span>Re-link Drive</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  disconnectDrive();
+                  showToast('Google Drive disconnected.');
+                  setSelectedFile(null);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-[rgb(var(--color-container-low))] hover:bg-red-500/10 hover:text-red-600 text-[rgb(var(--color-muted))] text-xs font-medium border border-[rgb(var(--color-border))] cursor-pointer transition-colors"
+                title="Disconnect Google Drive"
+              >
+                Disconnect
+              </button>
+
+              <a
+                href="https://drive.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-xl bg-[rgb(var(--color-container-low))] hover:bg-[rgb(var(--color-container))] text-[rgb(var(--color-text))] font-medium text-xs border border-[rgb(var(--color-border))] flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Open Google Drive in new tab"
+              >
+                <ExternalLink size={13} className="text-[#9e3c26] dark:text-[#ffb4a3]" />
+                <span>drive.google.com</span>
+              </a>
+            </div>
           )}
         </div>
       </div>
@@ -168,9 +208,18 @@ export default function NotesVault() {
             token={driveToken}
             selectedFile={selectedFile}
             onSelectFile={(file) => setSelectedFile(file)}
-            onRequestAuth={() => {
-              if (!user) setShowLogin(true);
-              else requestDriveAccess();
+            onRequestAuth={async () => {
+              if (!user) {
+                setShowLogin(true);
+                return;
+              }
+              const res = await requestDriveAccess();
+              if (res.success) {
+                showToast('Google Drive connected successfully!', 'success');
+                setExplorerRefreshKey(k => k + 1);
+              } else if (res.error) {
+                showToast(res.error, 'error');
+              }
             }}
             onToast={showToast}
             externalRefreshKey={explorerRefreshKey}

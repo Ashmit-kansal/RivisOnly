@@ -484,14 +484,23 @@ export default function GoogleDriveExplorer({
                     <RefreshCw size={12} />
                     <span>Retry Connection</span>
                   </button>
-                  {error.includes('AUTH_EXPIRED') && (
+                  {(error.includes('AUTH_INSUFFICIENT_SCOPES') || 
+                    error.toLowerCase().includes('insufficient') || 
+                    error.toLowerCase().includes('scope') || 
+                    error.includes('AUTH_EXPIRED')) && (
                     <button
                       type="button"
                       onClick={onRequestAuth}
-                      className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-semibold text-xs cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#9e3c26] hover:bg-[#be543c] text-white font-semibold text-xs cursor-pointer shadow-sm transition-all"
                     >
-                      Re-Authenticate Google Drive
+                      <Sparkles size={13} />
+                      <span>Grant Google Drive Permissions</span>
                     </button>
+                  )}
+                  {(error.includes('AUTH_INSUFFICIENT_SCOPES') || error.toLowerCase().includes('insufficient') || error.toLowerCase().includes('scope')) && (
+                    <p className="w-full text-[10px] text-[rgb(var(--color-muted))] pt-1">
+                      💡 <strong>Note:</strong> If Google displays &ldquo;Google hasn&apos;t verified this app&rdquo;, click <strong>Advanced &rarr; Go to Rivisonly (unsafe)</strong> and select both permissions to enable Drive access.
+                    </p>
                   )}
                 </div>
               );

@@ -148,16 +148,10 @@ export function AuthProvider({ children }) {
 
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const googleToken = credential?.accessToken;
-      if (googleToken) {
-        setDriveToken(googleToken);
-        try {
-          sessionStorage.setItem('rivisonly_google_drive_token', googleToken);
-        } catch {
-          // ignore
-        }
-      }
+      // NOTE: We intentionally do NOT set driveToken here.
+      // Basic login only requests 'profile' and 'email' scopes so new users sign in instantly
+      // without hitting Google's sensitive scopes warning screen or the 100-user cap.
+      // Drive access is granted explicitly on-demand via requestDriveAccess().
 
       const fbUser = result.user;
       const scholar = {
@@ -217,6 +211,12 @@ export function AuthProvider({ children }) {
       return { success: false, error: 'No Google Drive token was received.' };
     } catch (err) {
       console.error('Drive access request failed:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        return { 
+          success: false, 
+          error: 'Google Drive authorization was closed. If prompted with "Google hasn\'t verified this app", click "Advanced" -> "Go to Rivisonly (unsafe)" to grant Drive permissions.' 
+        };
+      }
       if (err.code === 'auth/unauthorized-domain') {
         return { 
           success: false, 
@@ -225,6 +225,13 @@ export function AuthProvider({ children }) {
       }
       return { success: false, error: err.message || 'Failed to connect Google Drive.' };
     }
+  };
+
+  const disconnectDrive = () => {
+    setDriveToken(null);
+    try {
+      sessionStorage.removeItem('rivisonly_google_drive_token');
+    } catch {}
   };
 
   // 3. EMAIL & PASSWORD LOGIN
@@ -385,6 +392,7 @@ export function AuthProvider({ children }) {
       signup,
       loginWithGoogle,
       requestDriveAccess,
+      disconnectDrive,
       logout,
       showLogin,
       setShowLogin,

@@ -102,10 +102,16 @@ export async function listGoogleDriveFiles({
 
   if (!res.ok) {
     if (res.status === 401) {
+      try { sessionStorage.removeItem('rivisonly_google_drive_token'); } catch {}
       throw new Error('AUTH_EXPIRED: Your Google Drive session has expired. Please re-authenticate.');
     }
     const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error?.message || `Google Drive query failed (${res.status})`);
+    const rawMsg = errData.error?.message || '';
+    if (res.status === 403 && (rawMsg.toLowerCase().includes('insufficient') || rawMsg.toLowerCase().includes('scope') || rawMsg.toLowerCase().includes('permission'))) {
+      try { sessionStorage.removeItem('rivisonly_google_drive_token'); } catch {}
+      throw new Error('AUTH_INSUFFICIENT_SCOPES: Google Drive access permissions are required to view your notes. Please click "Grant Google Drive Permissions" below.');
+    }
+    throw new Error(rawMsg || `Google Drive query failed (${res.status})`);
   }
 
   const data = await res.json();
