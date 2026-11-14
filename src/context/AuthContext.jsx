@@ -184,6 +184,12 @@ export function AuthProvider({ children }) {
       if (err.code === 'auth/popup-closed-by-user') {
         return { success: false, error: 'Google sign-in popup was closed before completion.' };
       }
+      if (err.code === 'auth/unauthorized-domain') {
+        return { 
+          success: false, 
+          error: `This domain (${window.location.hostname}) is not authorized in Firebase yet. Add "${window.location.hostname}" in Firebase Console -> Authentication -> Settings -> Authorized Domains.` 
+        };
+      }
       return { success: false, error: err.message || 'Google authentication failed.' };
     }
   };
@@ -211,6 +217,12 @@ export function AuthProvider({ children }) {
       return { success: false, error: 'No Google Drive token was received.' };
     } catch (err) {
       console.error('Drive access request failed:', err);
+      if (err.code === 'auth/unauthorized-domain') {
+        return { 
+          success: false, 
+          error: `Domain "${window.location.hostname}" is not authorized. Add it to Firebase Console -> Authentication -> Settings -> Authorized Domains.` 
+        };
+      }
       return { success: false, error: err.message || 'Failed to connect Google Drive.' };
     }
   };
