@@ -7,6 +7,7 @@ import {
 } from '../config/firebase';
 import {
   signInWithPopup,
+  reauthenticateWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
@@ -198,7 +199,20 @@ export function AuthProvider({ children }) {
       driveProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
       driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
       driveProvider.setCustomParameters({ prompt: 'consent' });
-      const result = await signInWithPopup(auth, driveProvider);
+
+      let result;
+      // If user is already authenticated in Firebase, use incremental re-authentication
+      if (auth.currentUser) {
+        try {
+          result = await reauthenticateWithPopup(auth.currentUser, driveProvider);
+        } catch (reauthErr) {
+          console.warn('reauthenticateWithPopup fell back to signInWithPopup:', reauthErr?.message);
+          result = await signInWithPopup(auth, driveProvider);
+        }
+      } else {
+        result = await signInWithPopup(auth, driveProvider);
+      }
+
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken;
       if (token) {
@@ -214,7 +228,7 @@ export function AuthProvider({ children }) {
       if (err.code === 'auth/popup-closed-by-user') {
         return { 
           success: false, 
-          error: 'Google Drive authorization was closed. If prompted with "Google hasn\'t verified this app", click "Advanced" -> "Go to Rivisonly (unsafe)" to grant Drive permissions.' 
+          error: 'Google Drive popup closed before finishing. In Brave browser or if an ad blocker is running, click the Brave Shields / AdBlock icon in your address bar and turn it OFF for this site so the Google authentication window can send the access token.' 
         };
       }
       if (err.code === 'auth/unauthorized-domain') {
