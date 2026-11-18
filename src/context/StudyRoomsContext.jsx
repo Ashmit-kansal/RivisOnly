@@ -18,7 +18,7 @@ import {
 
 const StudyRoomsContext = createContext(null);
 
-const GUILDS_STORAGE_KEY = 'rivisonly-guilds-v2';
+const GUILDS_STORAGE_KEY = 'rivisonly-guilds-v3';
 const MY_GUILD_ID_KEY = 'rivisonly-my-guild-id';
 const ACTIVE_SQUAD_SESSION_KEY = 'rivisonly-active-squad-session';
 const USER_TROPHIES_KEY = 'rivisonly-user-trophies';
@@ -28,17 +28,29 @@ const ARENA_STREAK_KEY = 'rivisonly-arena-streak';
 const ARENA_XP_KEY = 'rivisonly-arena-xp';
 const RUSH_HIGHSCORE_KEY = 'rivisonly-rush-highscore';
 
+function sanitizeGuild(g) {
+  if (!g) return g;
+  const isPurple = !g.badgeBg || g.badgeBg.includes('purple') || g.badgeBg.includes('indigo-800');
+  return {
+    ...g,
+    badgeBg: isPurple ? 'from-[#9e3c26] via-[#b3452d] to-[#7f2e1b]' : g.badgeBg
+  };
+}
+
 function getStoredGuilds() {
   try {
-    const raw = localStorage.getItem(GUILDS_STORAGE_KEY);
+    const raw = localStorage.getItem(GUILDS_STORAGE_KEY) || localStorage.getItem('rivisonly-guilds-v2');
     if (!raw) {
       localStorage.setItem(GUILDS_STORAGE_KEY, JSON.stringify(INITIAL_GUILDS));
-      return INITIAL_GUILDS;
+      return INITIAL_GUILDS.map(sanitizeGuild);
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_GUILDS;
+    const list = Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_GUILDS;
+    const sanitized = list.map(sanitizeGuild);
+    localStorage.setItem(GUILDS_STORAGE_KEY, JSON.stringify(sanitized));
+    return sanitized;
   } catch {
-    return INITIAL_GUILDS;
+    return INITIAL_GUILDS.map(sanitizeGuild);
   }
 }
 

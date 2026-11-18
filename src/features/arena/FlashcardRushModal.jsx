@@ -197,8 +197,8 @@ export default function FlashcardRushModal({ isOpen, onClose }) {
                 {streak >= 5 && (
                   <div className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 animate-bounce ${
                     multiplier === 3 
-                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
-                      : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30' 
+                      : 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30'
                   }`}>
                     <Flame size={13} />
                     <span>{multiplier}X COMBO ({streak})</span>
@@ -221,7 +221,7 @@ export default function FlashcardRushModal({ isOpen, onClose }) {
                 : feedback === 'wrong'
                 ? 'bg-red-500/15 border-red-500 animate-shake'
                 : multiplier === 3
-                ? 'bg-[rgb(var(--color-card))] border-purple-500/60 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
+                ? 'bg-[rgb(var(--color-card))] border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.2)]'
                 : 'bg-[rgb(var(--color-card))] border-[rgb(var(--color-border))]'
             }`}>
               <span className="text-[10px] font-mono uppercase tracking-wider text-[rgb(var(--color-muted))] font-bold mb-2">

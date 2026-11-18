@@ -17,7 +17,7 @@ export default function GuildWarLeaderboard() {
     <div className="space-y-6">
       
       {/* Guild War Season Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-[#9e3c26]/20 via-amber-500/10 to-purple-900/20 border border-[#9e3c26]/30 relative overflow-hidden">
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-[#9e3c26]/15 via-amber-500/10 to-[#9e3c26]/10 border border-[#9e3c26]/30 relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-[#9e3c26] text-white shadow-xs mb-2">
@@ -80,7 +80,7 @@ export default function GuildWarLeaderboard() {
                   </div>
 
                   {/* Guild Shield Icon */}
-                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${guild.badgeBg || 'from-purple-600 to-indigo-800'} text-white flex items-center justify-center text-2xl shadow-md shrink-0`}>
+                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${(!guild.badgeBg || guild.badgeBg.includes('purple') || guild.badgeBg.includes('indigo-800')) ? 'from-[#9e3c26] to-[#7f2e1b]' : guild.badgeBg} text-white flex items-center justify-center text-2xl shadow-md shrink-0`}>
                     {guild.badge || '🛡️'}
                   </div>
 

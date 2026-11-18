@@ -13,7 +13,7 @@ export default function ArenaHeroBanner({ onOpenDuel, onOpenGuilds }) {
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[rgb(var(--color-card))] via-[rgb(var(--color-container-low))] to-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] p-6 sm:p-8 shadow-sm">
       {/* Background Ambient Glow */}
-      <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-gradient-to-br from-amber-500/10 via-[#9e3c26]/10 to-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-gradient-to-br from-amber-500/10 via-[#9e3c26]/10 to-amber-600/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         
@@ -73,7 +73,7 @@ export default function ArenaHeroBanner({ onOpenDuel, onOpenGuilds }) {
         <div className="flex flex-col gap-2 shrink-0 sm:min-w-[280px]">
           <button
             onClick={onOpenDuel}
-            className="px-6 py-4 rounded-2xl bg-gradient-to-r from-[#9e3c26] via-indigo-600 to-purple-700 hover:brightness-110 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-[#9e3c26]/20 border border-amber-400/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
+            className="px-6 py-4 rounded-2xl bg-gradient-to-r from-[#9e3c26] via-[#b84a32] to-[#8d321d] hover:brightness-105 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-[#9e3c26]/25 border border-amber-400/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
           >
             <Swords size={18} className="text-amber-300 group-hover:rotate-12 transition-transform" />
             <span>Launch 1v1 Scholar Duel</span>

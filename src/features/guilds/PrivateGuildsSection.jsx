@@ -35,11 +35,11 @@ export default function PrivateGuildsSection({ onEnterChamber }) {
   const [newGuildName, setNewGuildName] = useState('');
   const [newGuildMotto, setNewGuildMotto] = useState('');
   const [newGuildBadge, setNewGuildBadge] = useState('🛡️');
-  const [newGuildBg, setNewGuildBg] = useState('from-purple-600 to-indigo-800');
+  const [newGuildBg, setNewGuildBg] = useState('from-[#9e3c26] to-[#7a2c1a]');
 
   const BADGE_OPTIONS = ['🛡️', '🔮', '⚔️', '⚡', '⚜️', '👑', '🐉', '💻', '🌟', '🎯'];
   const BG_OPTIONS = [
-    { label: 'Royal Purple', class: 'from-purple-600 to-indigo-800' },
+    { label: 'Terracotta Guard', class: 'from-[#9e3c26] to-[#7a2c1a]' },
     { label: 'Crimson Flame', class: 'from-rose-600 to-red-800' },
     { label: 'Emerald Order', class: 'from-emerald-600 to-teal-800' },
     { label: 'Solar Amber', class: 'from-amber-500 to-orange-700' },
@@ -107,7 +107,7 @@ export default function PrivateGuildsSection({ onEnterChamber }) {
         <div className="space-y-6 animate-fade-in-up">
           
           {/* Guild Header Banner */}
-          <div className={`p-6 sm:p-7 rounded-3xl border relative overflow-hidden bg-gradient-to-r ${myGuild.badgeBg || 'from-purple-600 to-indigo-800'} text-white shadow-xl shadow-black/10`}>
+          <div className={`p-6 sm:p-7 rounded-3xl border relative overflow-hidden bg-gradient-to-r ${(!myGuild.badgeBg || myGuild.badgeBg.includes('purple') || myGuild.badgeBg.includes('indigo-800')) ? 'from-[#9e3c26] via-[#b3452d] to-[#7f2e1b]' : myGuild.badgeBg} text-white shadow-xl shadow-black/10`}>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
               
               {/* Guild Icon & Info */}
@@ -390,7 +390,7 @@ export default function PrivateGuildsSection({ onEnterChamber }) {
             </div>
 
             {/* Card 2: Found a New Guild */}
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-[#9e3c26]/10 via-[rgb(var(--color-card))] to-purple-900/10 border border-[#9e3c26]/30 shadow-sm flex flex-col justify-between space-y-4">
+            <div className="p-6 rounded-3xl bg-gradient-to-br from-[#9e3c26]/10 via-[rgb(var(--color-card))] to-amber-500/10 border border-[#9e3c26]/30 shadow-sm flex flex-col justify-between space-y-4">
               <div className="space-y-4">
                 <div className="w-12 h-12 rounded-2xl bg-[#9e3c26]/10 text-[#9e3c26] dark:text-[#ffb4a3] flex items-center justify-center text-2xl shadow-sm">
                   🛡️
@@ -431,7 +431,7 @@ export default function PrivateGuildsSection({ onEnterChamber }) {
                   className="p-4 rounded-2xl bg-[rgb(var(--color-card))] border border-[rgb(var(--color-border))] flex items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${g.badgeBg || 'from-purple-600 to-indigo-800'} text-white flex items-center justify-center text-xl shadow-sm shrink-0`}>
+                    <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${(!g.badgeBg || g.badgeBg.includes('purple') || g.badgeBg.includes('indigo-800')) ? 'from-[#9e3c26] to-[#7f2e1b]' : g.badgeBg} text-white flex items-center justify-center text-xl shadow-sm shrink-0`}>
                       {g.badge || '🛡️'}
                     </div>
                     <div className="min-w-0">

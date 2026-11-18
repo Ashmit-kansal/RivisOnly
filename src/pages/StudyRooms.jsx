@@ -153,7 +153,7 @@ export default function StudyRooms() {
             <div className="hidden md:flex items-center gap-2 text-xs font-mono">
               <button
                 onClick={() => setShowGlobalDuelModal(true)}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#9e3c26] to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#9e3c26] to-[#b84a32] hover:brightness-105 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer"
               >
                 <Swords size={13} className="text-amber-300" />
                 <span>⚔️ 1v1 Scholar Duel Arena</span>

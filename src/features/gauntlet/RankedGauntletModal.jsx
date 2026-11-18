@@ -133,8 +133,8 @@ export default function RankedGauntletModal({
       stars: '⭐⭐⭐ 3 Stars',
       starsCount: 3,
       badge: 'High Stakes Trial',
-      color: 'border-purple-500/40 bg-purple-500/5 hover:border-purple-500',
-      tagColor: 'text-purple-400 bg-purple-500/10'
+      color: 'border-[#9e3c26]/40 bg-[#9e3c26]/5 hover:border-[#9e3c26]',
+      tagColor: 'text-[#9e3c26] dark:text-[#ffb4a3] bg-[#9e3c26]/10'
     }
   ];
 
